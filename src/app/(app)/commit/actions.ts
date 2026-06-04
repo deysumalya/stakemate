@@ -106,13 +106,15 @@ export async function acceptAndLockGoal(
   const newPledged = userData.pledged_balance + pledgeAmountPaise;
   
   // 2. Update balances
-  await supabase.from('users').update({
+  const { error: updateError } = await supabase.from('users').update({
     available_balance: newAvailable,
     pledged_balance: newPledged
   }).eq('id', user.id);
   
+  if (updateError) throw new Error("Failed to update balance: " + updateError.message);
+  
   // 3. Log transaction
-  await supabase.from('wallet_transactions').insert({
+  const { error: txError } = await supabase.from('wallet_transactions').insert({
     user_id: user.id,
     type: 'pledge',
     amount: pledgeAmountPaise,
@@ -120,8 +122,10 @@ export async function acceptAndLockGoal(
     notes: 'Pledged for goal: ' + goalText.substring(0, 50)
   });
   
+  if (txError) throw new Error("Failed to log transaction: " + txError.message);
+  
   // 4. Save Goal
-  await supabase.from('goals').insert({
+  const { error: goalError } = await supabase.from('goals').insert({
     user_id: user.id,
     goal_text: goalText,
     proof_description: proofDescription,
@@ -133,6 +137,8 @@ export async function acceptAndLockGoal(
     status: 'active',
     locked_at: new Date().toISOString()
   });
+  
+  if (goalError) throw new Error("Failed to insert goal: " + goalError.message);
   
   redirect('/dashboard');
 }
