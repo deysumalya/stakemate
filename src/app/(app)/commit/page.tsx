@@ -1,19 +1,26 @@
 import { createClient } from "@/utils/supabase/server";
 import { CommitForm } from "./CommitForm";
+import { redirect } from "next/navigation";
 
 export default async function CommitPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let availableBalance = 0;
-  if (user) {
-    const { data: userData } = await supabase
-      .from("users")
-      .select("available_balance")
-      .eq("id", user.id)
-      .single();
-    if (userData) availableBalance = userData.available_balance;
+  if (!user) {
+    redirect("/login");
   }
+
+  const { data: userData } = await supabase
+    .from("users")
+    .select("onboarding_completed, available_balance")
+    .eq("id", user.id)
+    .single();
+
+  if (userData && !userData.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
+  const availableBalance = userData?.available_balance || 0;
 
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto w-full py-8">

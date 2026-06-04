@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -22,9 +23,13 @@ export default async function DashboardPage() {
   // Fetch user stats
   const { data: userData } = await supabase
     .from("users")
-    .select("available_balance, pledged_balance, streak")
+    .select("available_balance, pledged_balance, streak, consecutive_fails, onboarding_completed")
     .eq("id", user?.id)
     .single();
+
+  if (userData && !userData.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
   const availableBalance = (userData?.available_balance || 0) / 100;
   const pledgedBalance = (userData?.pledged_balance || 0) / 100;

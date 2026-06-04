@@ -1,10 +1,10 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
-export async function updateProfileAction(formData: FormData) {
+export async function completeOnboardingAction(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
@@ -20,14 +20,15 @@ export async function updateProfileAction(formData: FormData) {
   const { error } = await supabase.from('users').update({
     full_name,
     occupation,
-    target_goal
+    target_goal,
+    onboarding_completed: true
   }).eq('id', user.id);
 
   if (error) {
-    console.error("Profile update error:", error);
-    throw new Error("Failed to update profile details.");
+    console.error("Onboarding error:", error);
+    throw new Error("Failed to save profile details.");
   }
 
-  revalidatePath('/profile');
-  return { success: true };
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
 }

@@ -1,17 +1,17 @@
 import { Anthropic } from '@anthropic-ai/sdk';
-import { NEGOTIATION_SYSTEM_PROMPT, MCQ_GENERATION_PROMPT, VISION_JUDGMENT_PROMPT } from './prompts';
+import { getNegotiationSystemPrompt, MCQ_GENERATION_PROMPT, VISION_JUDGMENT_PROMPT } from './prompts';
 
 const getAnthropic = () => new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || '' });
 
 // 1. Phase 1: Negotiation
-export async function negotiateGoalWithAI(goalText: string, proofDescription: string) {
+export async function negotiateGoalWithAI(goalText: string, proofDescription: string, userProfile?: { occupation: string, target_goal: string }) {
   const anthropic = getAnthropic();
   
   const msg = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20241022",
     max_tokens: 500,
     temperature: 0,
-    system: NEGOTIATION_SYSTEM_PROMPT,
+    system: getNegotiationSystemPrompt(userProfile),
     messages: [
       {
         role: "user",

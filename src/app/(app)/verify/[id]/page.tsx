@@ -13,6 +13,16 @@ export default async function VerifyPage({
 
   if (!user) redirect("/login");
 
+  const { data: userData } = await supabase
+    .from("users")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .single();
+
+  if (userData && !userData.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
   const { data: goal } = await supabase
     .from("goals")
     .select("*")

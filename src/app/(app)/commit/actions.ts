@@ -9,9 +9,21 @@ export async function negotiateGoalAction(goalText: string, proofDescription: st
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
+  // Fetch user profile data to pass as context
+  const { data: userData } = await supabase
+    .from('users')
+    .select('occupation, target_goal')
+    .eq('id', user.id)
+    .single();
+
+  const userProfile = userData ? {
+    occupation: userData.occupation,
+    target_goal: userData.target_goal
+  } : undefined;
+
   // Call the Claude AI Interrogator
   try {
-    const response = await negotiateGoalWithAI(goalText, proofDescription);
+    const response = await negotiateGoalWithAI(goalText, proofDescription, userProfile);
     return { success: true, data: response };
   } catch (error: any) {
     console.error("AI Negotiation Error:", error);
