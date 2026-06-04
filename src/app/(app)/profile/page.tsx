@@ -45,9 +45,19 @@ export default async function ProfilePage({
   return (
     <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
       {/* Header */}
-      <div className="animate-sm-fade-in-up">
-        <h1 className="text-3xl font-black tracking-tight mb-1">Profile & Stats</h1>
-        <p className="text-muted-foreground">{user?.email}</p>
+      <div className="animate-sm-fade-in-up flex flex-col items-start gap-1">
+        <h1 className="text-3xl font-black tracking-tight mb-1">
+          {userData?.full_name || "Profile & Stats"}
+        </h1>
+        <p className="text-muted-foreground">
+          {userData?.occupation ? `${userData.occupation} • ${user?.email}` : user?.email}
+        </p>
+        {userData?.target_goal && (
+          <div className="mt-3 bg-primary/10 border border-primary/20 text-primary text-sm font-medium px-4 py-2 rounded-xl flex items-start gap-2 max-w-2xl">
+            <Target className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">{userData.target_goal}</p>
+          </div>
+        )}
       </div>
 
       {/* Message */}
