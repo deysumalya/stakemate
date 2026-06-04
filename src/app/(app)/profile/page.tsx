@@ -61,14 +61,6 @@ export default async function ProfilePage({
             <p className="leading-relaxed">{userData.target_goal}</p>
           </div>
         )}
-        
-        {/* TEMPORARY DEBUG BANNER */}
-        <div className="w-full mt-4 p-4 bg-red-500/20 border border-red-500 text-red-500 rounded-xl font-mono text-xs overflow-auto">
-          <p><strong>DEBUG INFO:</strong></p>
-          <p>User ID: {user?.id}</p>
-          <p>DB Error: {JSON.stringify(userError)}</p>
-          <p>DB Data: {JSON.stringify(userData)}</p>
-        </div>
       </div>
 
       {/* Message */}
