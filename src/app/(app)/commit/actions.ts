@@ -142,5 +142,5 @@ export async function acceptAndLockGoal(
   if (goalError) throw new Error("Failed to insert goal: " + goalError.message);
   
   revalidatePath('/dashboard');
-  redirect('/dashboard');
+  return { success: true };
 }

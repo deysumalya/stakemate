@@ -126,11 +126,11 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
     }
 
     try {
-      await acceptAndLockGoal(
+      const result = await acceptAndLockGoal(
         goalText,
         proofText,
         deadlineDate.toISOString(),
-        pledgeRupees,
+        pledgePaise,
         'other', // dummy category
         null,
         {
@@ -144,6 +144,10 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
           rejection_reason: null
         }
       );
+      
+      if (result.success) {
+        router.push('/dashboard');
+      }
     } catch (e: any) {
       setError(e.message || "Failed to lock commitment");
       setIsLocking(false);
@@ -163,15 +167,20 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
     try {
       const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
-      await acceptAndLockGoal(
+      const pledgePaise = pledgeRupees * 100;
+      const result = await acceptAndLockGoal(
         goalText,
         proofText,
         deadlineDate.toISOString(),
-        pledgeRupees,
+        pledgePaise,
         negotiationResult.category,
         negotiationResult.topic_list_required ? topicList : null,
         negotiationResult
       );
+      
+      if (result.success) {
+        router.push('/dashboard');
+      }
     } catch (e: any) {
       setError(e.message || "Failed to lock commitment");
       setIsLocking(false);
