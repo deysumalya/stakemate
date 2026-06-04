@@ -365,7 +365,15 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
             
             {!negotiationResult.is_goal_acceptable ? (
               <div className="flex flex-col gap-4 relative">
-                <p className="text-destructive font-medium leading-relaxed">{negotiationResult.rejection_reason}</p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-destructive font-bold leading-relaxed">{negotiationResult.rejection_reason}</p>
+                  {negotiationResult.ai_message_to_user && (
+                    <p className="text-foreground/80 text-sm leading-relaxed border-l-2 border-primary/30 pl-3 py-1 bg-white/[0.02] rounded-r">
+                      <span className="font-bold text-primary block mb-1">AI Coach Note:</span>
+                      {negotiationResult.ai_message_to_user}
+                    </p>
+                  )}
+                </div>
                 <Button 
                   variant="outline" 
                   onClick={() => setNegotiationResult(null)}
