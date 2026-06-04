@@ -149,6 +149,9 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
       
       if (result.success) {
         router.push('/dashboard');
+      } else {
+        setError(result.error || "Failed to bypass AI and lock commitment");
+        setIsLocking(false);
       }
     } catch (e: any) {
       setError(e.message || "Failed to lock commitment");
@@ -182,6 +185,9 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
       
       if (result.success) {
         router.push('/dashboard');
+      } else {
+        setError(result.error || "Failed to lock commitment");
+        setIsLocking(false);
       }
     } catch (e: any) {
       setError(e.message || "Failed to lock commitment");
