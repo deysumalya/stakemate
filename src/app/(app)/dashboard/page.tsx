@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Target, Wallet, Flame } from "lucide-react";
+import { LoadMoneyForm } from "./LoadMoneyForm";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -77,9 +78,9 @@ export default async function DashboardPage() {
                       <p className="text-xl font-bold tabular-nums text-orange-400">₹{pledgedBalance}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button className="w-full font-bold" variant="default">Load ₹50</Button>
-                    <Button className="w-full" variant="outline" asChild>
+                  <div className="flex gap-2 w-full">
+                    <LoadMoneyForm />
+                    <Button className="flex-1" variant="outline" asChild>
                       <Link href="/redeem">Redeem</Link>
                     </Button>
                   </div>

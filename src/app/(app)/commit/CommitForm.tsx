@@ -12,6 +12,7 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const [goalText, setGoalText] = useState("")
   const [proofText, setProofText] = useState("")
   const [hours, setHours] = useState("2")
+  const [customDeadline, setCustomDeadline] = useState("")
   const [pledge, setPledge] = useState("20")
   const [customPledge, setCustomPledge] = useState("")
   
@@ -23,6 +24,25 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
   const handleNegotiate = async () => {
     if (!goalText || !proofText) return;
+    
+    // Check deadline if custom
+    if (hours === "custom") {
+      if (!customDeadline) {
+        setError("Please select a custom deadline.");
+        return;
+      }
+      const selectedDate = new Date(customDeadline);
+      const now = new Date();
+      if (selectedDate <= now) {
+        setError("Deadline must be in the future.");
+        return;
+      }
+      const diffHours = (selectedDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+      if (diffHours > 48) {
+        setError("Deadline cannot be more than 48 hours in the future.");
+        return;
+      }
+    }
     
     // Check balance before wasting AI credits
     const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
@@ -57,8 +77,13 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const handleLock = async () => {
     setIsLocking(true);
     // Calculate deadline
-    const deadlineDate = new Date();
-    deadlineDate.setHours(deadlineDate.getHours() + parseInt(hours));
+    let deadlineDate: Date;
+    if (hours === "custom") {
+      deadlineDate = new Date(customDeadline);
+    } else {
+      deadlineDate = new Date();
+      deadlineDate.setHours(deadlineDate.getHours() + parseInt(hours));
+    }
 
     try {
       const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
@@ -131,8 +156,21 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
                   <SelectItem value="12">In 12 Hours</SelectItem>
                   <SelectItem value="24">In 24 Hours</SelectItem>
                   <SelectItem value="48">In 48 Hours</SelectItem>
+                  <SelectItem value="custom">Custom Date & Time</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {hours === "custom" && (
+                <div className="mt-2 relative animate-sm-fade-in-up">
+                  <Input 
+                    type="datetime-local"
+                    value={customDeadline}
+                    onChange={(e) => setCustomDeadline(e.target.value)}
+                    className="bg-card/50 border-white/[0.08] focus:border-primary/50 focus-glow rounded-xl h-10 w-full text-sm font-medium text-foreground"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+              )}
             </div>
             
             <div className="flex flex-col gap-2">
