@@ -77,7 +77,7 @@ export async function acceptAndLockGoal(
   goalText: string, 
   proofDescription: string, 
   deadlineDate: string, 
-  pledgeAmountRupees: number, 
+  pledgeAmountPaise: number, 
   category: string,
   topicList: string | null,
   negotiationJson: any
@@ -86,8 +86,6 @@ export async function acceptAndLockGoal(
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) throw new Error("Unauthorized");
-  
-  const pledgeAmountPaise = pledgeAmountRupees * 100;
   
   // 1. Check Balance
   const { data: userData, error: userError } = await supabase
