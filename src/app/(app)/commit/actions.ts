@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getNegotiationSystemPrompt } from "@/utils/ai/prompts";
 import { negotiateGoalWithAI } from "@/utils/ai/claude";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 
 export async function negotiateGoalAction(goalText: string, proofDescription: string) {
   const supabase = await createClient();
@@ -140,5 +141,6 @@ export async function acceptAndLockGoal(
   
   if (goalError) throw new Error("Failed to insert goal: " + goalError.message);
   
+  revalidatePath('/dashboard');
   redirect('/dashboard');
 }
