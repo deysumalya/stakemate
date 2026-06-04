@@ -4,12 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Sparkles, Mail, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
+
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string; error?: string }>;
 }) {
   const params = await searchParams;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    return redirect("/dashboard");
+  }
 
   return (
     <div className="relative flex flex-1 items-center justify-center min-h-screen p-4 overflow-hidden">
