@@ -59,40 +59,53 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl mx-auto w-full">
-      <div className="flex flex-col gap-4">
+
+      {/* Step 1: Goal Input */}
+      <div className="flex flex-col gap-6 animate-sm-fade-in-up">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">I commit to:</label>
+          <label className="text-xs font-black uppercase tracking-[0.15em] text-primary/70 flex items-center gap-2">
+            <span className="inline-block w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center border border-primary/20">1</span>
+            I commit to
+          </label>
           <Textarea 
             placeholder="e.g., Study Thermodynamics Chapter 4 for JEE"
             value={goalText}
             onChange={(e) => setGoalText(e.target.value)}
             disabled={!!negotiationResult}
-            className="text-lg resize-none"
+            className="text-lg resize-none bg-card/50 border-white/[0.08] focus:border-primary/50 focus-glow transition-all duration-300 rounded-xl placeholder:text-muted-foreground/50"
             rows={3}
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">I will prove it by:</label>
+        {/* Step 2: Proof */}
+        <div className="flex flex-col gap-2 animate-sm-fade-in-up stagger-2">
+          <label className="text-xs font-black uppercase tracking-[0.15em] text-primary/70 flex items-center gap-2">
+            <span className="inline-block w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center border border-primary/20">2</span>
+            I will prove it by
+          </label>
           <Textarea 
             placeholder="e.g., Uploading a photo of my rough calculations"
             value={proofText}
             onChange={(e) => setProofText(e.target.value)}
             disabled={!!negotiationResult}
-            className="text-lg resize-none"
+            className="text-lg resize-none bg-card/50 border-white/[0.08] focus:border-primary/50 focus-glow transition-all duration-300 rounded-xl placeholder:text-muted-foreground/50"
             rows={2}
           />
         </div>
 
+        {/* Step 3: Deadline + Pledge */}
         {!negotiationResult && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 animate-sm-fade-in-up stagger-3">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Deadline</label>
+              <label className="text-xs font-black uppercase tracking-[0.15em] text-primary/70 flex items-center gap-2">
+                <span className="inline-block w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center border border-primary/20">3</span>
+                Deadline
+              </label>
               <Select value={hours} onValueChange={setHours}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-white/[0.08] rounded-xl focus:border-primary/50">
                   <SelectValue placeholder="Time" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-white/[0.08] rounded-xl">
                   <SelectItem value="2">In 2 Hours</SelectItem>
                   <SelectItem value="4">In 4 Hours</SelectItem>
                   <SelectItem value="12">In 12 Hours</SelectItem>
@@ -103,12 +116,15 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
             </div>
             
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Pledge Amount</label>
+              <label className="text-xs font-black uppercase tracking-[0.15em] text-primary/70 flex items-center gap-2">
+                <span className="inline-block w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center border border-primary/20">4</span>
+                Deposit
+              </label>
               <Select value={pledge} onValueChange={setPledge}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-card/50 border-white/[0.08] rounded-xl focus:border-primary/50">
                   <SelectValue placeholder="₹ Amount" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-card border-white/[0.08] rounded-xl">
                   <SelectItem value="10">₹10 (Tiny Sting)</SelectItem>
                   <SelectItem value="20">₹20 (Standard)</SelectItem>
                   <SelectItem value="50">₹50 (Serious)</SelectItem>
@@ -119,75 +135,146 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
         )}
       </div>
 
+      {/* Error */}
       {error && (
-        <div className="p-4 bg-destructive/10 text-destructive rounded-md text-sm border border-destructive/20">
+        <div className="p-4 bg-destructive/10 text-destructive rounded-xl text-sm border border-destructive/20 animate-sm-fade-in-up flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
           {error}
         </div>
       )}
 
+      {/* Negotiate Button */}
       {!negotiationResult ? (
         <Button 
           size="lg" 
-          className="w-full font-bold text-lg" 
+          className={`w-full font-black text-lg rounded-xl h-14 relative overflow-hidden transition-all duration-300 ${
+            !isNegotiating && goalText && proofText 
+              ? 'animate-sm-shimmer' 
+              : ''
+          }`}
           onClick={handleNegotiate}
           disabled={isNegotiating || !goalText || !proofText}
         >
           {isNegotiating ? (
-            <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analyzing Loophole...</>
+            <span className="flex items-center gap-3">
+              {/* Brain loading animation */}
+              <span className="relative">
+                <span className="text-2xl animate-sm-brain-pulse inline-block">🧠</span>
+                <Sparkles className="w-3 h-3 text-yellow-300 absolute -top-1 -right-1 animate-sm-sparkle" />
+              </span>
+              <span>Analyzing Loopholes…</span>
+            </span>
           ) : (
-            <><Sparkles className="mr-2 h-5 w-5" /> Negotiate with AI</>
+            <span className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Negotiate with AI
+            </span>
           )}
         </Button>
       ) : (
-        <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
-          <div className={`p-6 rounded-xl border-2 ${negotiationResult.is_goal_acceptable ? 'border-primary/50 bg-primary/5' : 'border-destructive/50 bg-destructive/5'}`}>
-            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-              <AlertTriangle className={`w-5 h-5 ${negotiationResult.is_goal_acceptable ? 'text-primary' : 'text-destructive'}`} />
+        /* AI Verdict */
+        <div className="flex flex-col gap-6 animate-sm-slide-in-bottom">
+          <div className={`p-6 rounded-2xl border-2 relative overflow-hidden ${
+            negotiationResult.is_goal_acceptable 
+              ? 'border-primary/30 bg-primary/[0.04]' 
+              : 'border-destructive/30 bg-destructive/[0.04]'
+          }`}>
+            {/* Ambient glow */}
+            <div className={`absolute inset-0 pointer-events-none ${
+              negotiationResult.is_goal_acceptable 
+                ? 'bg-gradient-to-br from-primary/[0.05] to-transparent' 
+                : 'bg-gradient-to-br from-destructive/[0.05] to-transparent'
+            }`} />
+
+            <h3 className="font-black text-lg mb-3 flex items-center gap-2 relative">
+              <span className={`p-1.5 rounded-lg ${
+                negotiationResult.is_goal_acceptable ? 'bg-primary/10' : 'bg-destructive/10'
+              }`}>
+                <AlertTriangle className={`w-5 h-5 ${
+                  negotiationResult.is_goal_acceptable ? 'text-primary' : 'text-destructive'
+                }`} />
+              </span>
               AI Interrogator Verdict
             </h3>
             
             {!negotiationResult.is_goal_acceptable ? (
-              <div className="flex flex-col gap-4">
-                <p className="text-destructive font-medium">{negotiationResult.rejection_reason}</p>
-                <Button variant="outline" onClick={() => setNegotiationResult(null)}>Revise My Proof</Button>
+              <div className="flex flex-col gap-4 relative">
+                <p className="text-destructive font-medium leading-relaxed">{negotiationResult.rejection_reason}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setNegotiationResult(null)}
+                  className="rounded-xl border-white/[0.08]"
+                >
+                  Revise My Proof
+                </Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
-                <p className="text-foreground">{negotiationResult.ai_message_to_user}</p>
+              <div className="flex flex-col gap-5 relative">
+                <p className="text-foreground/90 leading-relaxed">{negotiationResult.ai_message_to_user}</p>
                 
-                <div className="mt-4 p-4 bg-background rounded border border-border">
-                  <p className="text-sm font-bold text-muted-foreground uppercase mb-2">Final Verification Checklist</p>
-                  <ul className="list-disc pl-5 space-y-1 text-sm">
+                {/* Verification Checklist */}
+                <div className="mt-2 p-5 bg-background/40 rounded-xl border border-white/[0.06]">
+                  <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.15em] mb-3 flex items-center gap-2">
+                    <span className="text-primary">✓</span>
+                    Final Verification Checklist
+                  </p>
+                  <ul className="space-y-2">
                     {negotiationResult.verification_requirements.map((req: string, i: number) => (
-                      <li key={i}>{req}</li>
+                      <li 
+                        key={i} 
+                        className="animate-sm-check-in flex items-start gap-3 text-sm text-foreground/80"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      >
+                        <span className="text-primary mt-0.5 shrink-0">▸</span>
+                        {req}
+                      </li>
                     ))}
                   </ul>
                   {negotiationResult.timer_required_in_minutes > 0 && (
-                    <p className="mt-4 text-xs font-bold text-orange-500 bg-orange-500/10 inline-block px-2 py-1 rounded">
+                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-black text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20">
                       ⏱️ TIMED TEST: {negotiationResult.timer_required_in_minutes} MINUTES
-                    </p>
+                    </div>
                   )}
                 </div>
 
+                {/* Topic list input */}
                 {negotiationResult.topic_list_required && (
-                  <div className="flex flex-col gap-2 mt-2">
-                    <label className="text-sm font-bold text-foreground">List the specific topics you will study (Comma separated):</label>
+                  <div className="flex flex-col gap-2 animate-sm-fade-in-up">
+                    <label className="text-sm font-bold text-foreground">
+                      List the specific topics you will study (Comma separated):
+                    </label>
                     <Input 
                       placeholder="e.g. Newton's Laws, Friction, Kinematics" 
                       value={topicList}
                       onChange={(e) => setTopicList(e.target.value)}
+                      className="bg-card/50 border-white/[0.08] focus:border-primary/50 focus-glow rounded-xl"
                     />
                   </div>
                 )}
 
-                <div className="flex gap-4 mt-4">
-                  <Button variant="outline" className="flex-1" onClick={() => setNegotiationResult(null)} disabled={isLocking}>Cancel</Button>
+                {/* Action Buttons */}
+                <div className="flex gap-4 mt-2">
                   <Button 
-                    className="flex-1 font-bold" 
+                    variant="outline" 
+                    className="flex-1 rounded-xl border-white/[0.08]" 
+                    onClick={() => setNegotiationResult(null)} 
+                    disabled={isLocking}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="flex-1 font-black rounded-xl relative overflow-hidden animate-sm-glow-ring"
                     onClick={handleLock}
                     disabled={isLocking || (negotiationResult.topic_list_required && !topicList)}
                   >
-                    {isLocking ? <Loader2 className="w-5 h-5 animate-spin" /> : `Accept & Lock ₹${pledge}`}
+                    {isLocking ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span>🔒</span>
+                        Accept & Lock ₹{pledge}
+                      </span>
+                    )}
                   </Button>
                 </div>
               </div>

@@ -1,7 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { fileDispute } from "./actions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Target, TrendingUp, Wallet, Trophy } from "lucide-react";
 
 export default async function ProfilePage({
   searchParams,
@@ -12,118 +11,195 @@ export default async function ProfilePage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch past goals
+  // Fetch past goals (V2: resolved_pass / resolved_fail)
   const { data: pastGoals } = await supabase
     .from("goals")
-    .select("*, disputes(status, claude_verdict, claude_reasoning)")
+    .select("id, goal_text, pledge_amount, status, created_at, deadline, category")
     .eq("user_id", user?.id)
-    .in("status", ["pass", "fail"])
+    .in("status", ["resolved_pass", "resolved_fail"])
     .order("created_at", { ascending: false });
 
-  // Fetch user details
+  // Fetch user details (V2 columns)
   const { data: userData } = await supabase
     .from("users")
-    .select("*")
+    .select("available_balance, pledged_balance, streak, consecutive_fails, category")
     .eq("id", user?.id)
     .single();
 
+  // Calculate stats
+  const totalGoals = pastGoals?.length || 0;
+  const passedGoals = pastGoals?.filter((g: any) => g.status === "resolved_pass").length || 0;
+  const passRate = totalGoals > 0 ? Math.round((passedGoals / totalGoals) * 100) : 0;
+  const totalPledged = pastGoals?.reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0) || 0;
+  const totalWonBack = pastGoals
+    ?.filter((g: any) => g.status === "resolved_pass")
+    .reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0) || 0;
+
   return (
     <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Profile & History</h1>
+      {/* Header */}
+      <div className="animate-sm-fade-in-up">
+        <h1 className="text-3xl font-black tracking-tight mb-1">Profile & Stats</h1>
         <p className="text-muted-foreground">{user?.email}</p>
       </div>
 
+      {/* Message */}
       {params?.message && (
-        <div className="p-4 bg-primary/20 text-primary border border-primary/50 rounded-lg font-medium">
+        <div className="p-4 bg-primary/10 text-primary border border-primary/30 rounded-xl font-medium text-sm animate-sm-fade-in-up">
           {params.message}
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account Details</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Subscription Status</p>
-            <p className="font-medium capitalize">{userData?.subscription_status?.replace('_', ' ') || 'Free Trial'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Category</p>
-            <p className="font-medium">{userData?.interest_category || 'Software/Code'}</p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-sm-fade-in-up stagger-2">
+        <StatCard
+          icon={<Target className="w-4 h-4 text-primary" />}
+          label="Total Goals"
+          value={totalGoals.toString()}
+          delay={1}
+        />
+        <StatCard
+          icon={<TrendingUp className="w-4 h-4 text-emerald-400" />}
+          label="Pass Rate"
+          value={`${passRate}%`}
+          accent={passRate >= 70 ? "text-emerald-400" : passRate >= 40 ? "text-orange-400" : "text-destructive"}
+          delay={2}
+        />
+        <StatCard
+          icon={<Wallet className="w-4 h-4 text-orange-400" />}
+          label="Total Pledged"
+          value={`₹${totalPledged / 100}`}
+          delay={3}
+        />
+        <StatCard
+          icon={<Trophy className="w-4 h-4 text-yellow-400" />}
+          label="Won Back"
+          value={`₹${totalWonBack / 100}`}
+          accent="text-primary"
+          delay={4}
+        />
+      </div>
 
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight mb-4 mt-8">Goal History</h2>
+      {/* User Info Bar */}
+      <div className="animate-sm-fade-in-up stagger-3">
+        <Card className="glass-card border border-white/[0.06]">
+          <CardContent className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Balance</p>
+              <p className="font-bold text-primary">₹{(userData?.available_balance || 0) / 100}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Pledged</p>
+              <p className="font-bold text-orange-400">₹{(userData?.pledged_balance || 0) / 100}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Streak</p>
+              <p className="font-bold">
+                {userData?.streak || 0} {(userData?.streak || 0) > 0 && <span className="text-orange-400">🔥</span>}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">Category</p>
+              <p className="font-bold capitalize">{userData?.category || "General"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Goal History */}
+      <div className="animate-sm-fade-in-up stagger-4">
+        <h2 className="text-2xl font-black tracking-tight mb-4">Goal History</h2>
         {pastGoals && pastGoals.length > 0 ? (
-          <div className="flex flex-col gap-4">
-            {pastGoals.map((goal: any) => {
-              const isPass = goal.status === 'pass';
-              const dispute = goal.disputes?.[0];
-
+          <div className="flex flex-col gap-3">
+            {pastGoals.map((goal: any, index: number) => {
+              const isPass = goal.status === "resolved_pass";
               return (
-                <Card key={goal.id} className={`overflow-hidden border-l-4 ${isPass ? 'border-l-primary' : 'border-l-destructive'}`}>
-                  <CardContent className="p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                          isPass ? 'bg-primary/20 text-primary' : 'bg-destructive/20 text-destructive'
-                        }`}>
-                          {goal.status}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(goal.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="font-medium text-lg">{goal.goal_text}</p>
-                    </div>
-                    
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <div className="text-sm text-muted-foreground">
-                        Staked: <span className="font-bold text-foreground">${goal.stake_amount}</span>
-                      </div>
-                      
-                      {/* Dispute UI */}
-                      {goal.status === 'fail' && !dispute && (
-                        <form action={fileDispute}>
-                          <input type="hidden" name="goalId" value={goal.id} />
-                          <input type="hidden" name="goalText" value={goal.goal_text} />
-                          <input type="hidden" name="proofUrl" value={goal.proof_url} />
-                          <Button size="sm" variant="outline" type="submit">
-                            File Dispute
-                          </Button>
-                        </form>
-                      )}
-                      
-                      {dispute && (
-                        <div className="text-sm px-3 py-2 bg-muted rounded-md max-w-xs text-right">
-                          <span className="font-semibold block mb-1">
-                            Dispute {dispute.status === 'resolved' ? (dispute.claude_verdict === 'pass' ? 'Won' : 'Lost') : 'Pending'}
+                <div
+                  key={goal.id}
+                  className="animate-sm-fade-in-up"
+                  style={{ animationDelay: `${index * 0.06}s` }}
+                >
+                  <Card className={`overflow-hidden glass-card card-hover-lift border-l-4 ${
+                    isPass ? 'border-l-primary' : 'border-l-destructive'
+                  } border border-white/[0.06]`}>
+                    <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          {/* Status badge with glow */}
+                          <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                            isPass 
+                              ? 'bg-primary/15 text-primary shadow-[0_0_10px_rgba(57,255,20,0.15)]' 
+                              : 'bg-destructive/15 text-destructive shadow-[0_0_10px_rgba(255,59,48,0.15)]'
+                          }`}>
+                            {isPass ? "Passed" : "Failed"}
                           </span>
-                          {dispute.claude_reasoning && (
-                            <span className="text-muted-foreground text-xs leading-tight block">
-                              "{dispute.claude_reasoning}"
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(goal.created_at).toLocaleDateString()}
+                          </span>
+                          {goal.category && (
+                            <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                              {goal.category}
                             </span>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <p className="font-medium text-foreground/90 truncate">{goal.goal_text}</p>
+                      </div>
+                      
+                      <div className="shrink-0 text-right">
+                        <p className="text-xs text-muted-foreground mb-0.5">Deposit</p>
+                        <p className={`font-black text-lg tabular-nums ${isPass ? 'text-primary' : 'text-destructive'}`}>
+                          {isPass ? '+' : '-'}₹{(goal.pledge_amount || 0) / 100}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               );
             })}
           </div>
         ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground">No past goals found.</p>
+          <Card className="glass-card border border-white/[0.06]">
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-4">
+              <span className="text-5xl animate-sm-float inline-block">📋</span>
+              <p className="text-muted-foreground">No completed goals yet. Start your first commitment!</p>
             </CardContent>
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+/* Stat Card Helper Component */
+function StatCard({ 
+  icon, 
+  label, 
+  value, 
+  accent, 
+  delay 
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string; 
+  accent?: string; 
+  delay: number;
+}) {
+  return (
+    <div
+      className="animate-sm-fade-in-up card-hover-lift"
+      style={{ animationDelay: `${delay * 0.08}s` }}
+    >
+      <Card className="glass-card border border-white/[0.06]">
+        <CardContent className="p-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            {icon}
+            <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
+          </div>
+          <p className={`text-2xl font-black tabular-nums ${accent || 'text-foreground'}`}>
+            {value}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
