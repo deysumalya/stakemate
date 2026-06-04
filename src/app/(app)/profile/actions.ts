@@ -17,11 +17,12 @@ export async function updateProfileAction(formData: FormData) {
     throw new Error("All fields are required");
   }
 
-  const { error } = await supabase.from('users').update({
+  const { error } = await supabase.from('users').upsert({
+    id: user.id,
     full_name,
     occupation,
     target_goal
-  }).eq('id', user.id);
+  });
 
   if (error) {
     console.error("Profile update error:", error);

@@ -17,12 +17,13 @@ export async function completeOnboardingAction(formData: FormData) {
     throw new Error("All fields are required");
   }
 
-  const { error } = await supabase.from('users').update({
+  const { error } = await supabase.from('users').upsert({
+    id: user.id,
     full_name,
     occupation,
     target_goal,
     onboarding_completed: true
-  }).eq('id', user.id);
+  });
 
   if (error) {
     console.error("Onboarding error:", error);
