@@ -36,13 +36,14 @@ export default async function ProfilePage({
   }
 
   // Calculate stats
-  const totalGoals = pastGoals?.length || 0;
-  const passedGoals = pastGoals?.filter((g: any) => g.status === "resolved_pass").length || 0;
+  const safePastGoals = pastGoals || [];
+  const totalGoals = safePastGoals.length;
+  const passedGoals = safePastGoals.filter((g: any) => g.status === "resolved_pass").length;
   const passRate = totalGoals > 0 ? Math.round((passedGoals / totalGoals) * 100) : 0;
-  const totalPledged = pastGoals?.reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0) || 0;
-  const totalWonBack = pastGoals
-    ?.filter((g: any) => g.status === "resolved_pass")
-    .reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0) || 0;
+  const totalPledged = safePastGoals.reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
+  const totalWonBack = safePastGoals
+    .filter((g: any) => g.status === "resolved_pass")
+    .reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
 
   return (
     <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
