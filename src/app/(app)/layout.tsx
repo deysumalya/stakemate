@@ -25,7 +25,6 @@ export default async function AppLayout({
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium">
           <Link href="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
-          <Link href="/jury" className="hover:text-primary transition-colors">Jury</Link>
           <Link href="/profile" className="hover:text-primary transition-colors">Profile</Link>
           <form action="/auth/signout" method="post">
             <Button variant="ghost" size="sm">Sign Out</Button>
