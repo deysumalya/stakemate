@@ -153,7 +153,20 @@ export default async function DashboardPage() {
                     </div>
                   )}
 
-                  {activeGoal.status === "active" && (
+                  {activeGoal.status === "active" && new Date(activeGoal.deadline) <= new Date() && (
+                    <div className="flex flex-col gap-4">
+                      <div className="p-5 rounded-xl bg-destructive/[0.06] border border-destructive/15 text-center">
+                        <p className="font-bold text-xs uppercase tracking-wider text-destructive mb-2">
+                          Deadline Missed
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          You did not verify this commitment in time. Your pledge of ₹{(activeGoal.pledge_amount || 0) / 100} has been forfeited.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeGoal.status === "active" && new Date(activeGoal.deadline) > new Date() && (
                     <div className="flex flex-col gap-4">
                       <div className="p-5 rounded-xl bg-primary/[0.06] border border-primary/15">
                         <p className="font-bold text-xs uppercase tracking-wider text-primary mb-2">
