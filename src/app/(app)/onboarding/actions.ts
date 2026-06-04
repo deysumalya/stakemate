@@ -19,6 +19,7 @@ export async function completeOnboardingAction(formData: FormData) {
 
   const { error } = await supabase.from('users').upsert({
     id: user.id,
+    email: user.email,
     full_name,
     occupation,
     target_goal,
