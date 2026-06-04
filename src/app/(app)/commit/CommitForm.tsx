@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,6 +10,7 @@ import { negotiateGoalAction, acceptAndLockGoal, pollMatrixRequestAction } from 
 import { Loader2, Sparkles, AlertTriangle, FastForward } from "lucide-react"
 
 export function CommitForm({ availableBalance }: { availableBalance: number }) {
+  const router = useRouter()
   const [goalText, setGoalText] = useState("")
   const [proofText, setProofText] = useState("")
   const [hours, setHours] = useState("2")
