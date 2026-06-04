@@ -5,6 +5,8 @@ import { Target, TrendingUp, Wallet, Trophy, UserCog, BarChart3 } from "lucide-r
 import Link from "next/link";
 import { EditProfileForm } from "./EditProfileForm";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage({
   searchParams,
 }: {
