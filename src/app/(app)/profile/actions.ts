@@ -25,8 +25,7 @@ export async function updateProfileAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Profile update error:", error);
-    throw new Error("Failed to update profile details.");
+    return { success: false, error: JSON.stringify(error) };
   }
 
   revalidatePath('/profile');

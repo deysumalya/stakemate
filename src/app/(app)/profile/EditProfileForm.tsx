@@ -23,7 +23,11 @@ export function EditProfileForm({ userDetails }: { userDetails: any }) {
     
     const formData = new FormData(e.currentTarget)
     try {
-      await updateProfileAction(formData)
+      const result = await updateProfileAction(formData)
+      if (result && !result.success) {
+        setError(result.error || "Failed to update profile");
+        return;
+      }
       setSuccess(true)
       router.refresh() // Force Next.js to re-fetch the server component data
       setTimeout(() => setSuccess(false), 3000)
