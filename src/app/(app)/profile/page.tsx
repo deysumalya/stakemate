@@ -25,9 +25,9 @@ export default async function ProfilePage({
     .order("created_at", { ascending: false });
 
   // Fetch user details (V2 columns)
-  const { data: userData } = await supabase
+  const { data: userData, error: userError } = await supabase
     .from("users")
-    .select("available_balance, pledged_balance, streak, consecutive_fails, category, full_name, occupation, target_goal, onboarding_completed")
+    .select("id, available_balance, pledged_balance, streak, consecutive_fails, category, full_name, occupation, target_goal, onboarding_completed")
     .eq("id", user?.id)
     .single();
 
@@ -61,6 +61,14 @@ export default async function ProfilePage({
             <p className="leading-relaxed">{userData.target_goal}</p>
           </div>
         )}
+        
+        {/* TEMPORARY DEBUG BANNER */}
+        <div className="w-full mt-4 p-4 bg-red-500/20 border border-red-500 text-red-500 rounded-xl font-mono text-xs overflow-auto">
+          <p><strong>DEBUG INFO:</strong></p>
+          <p>User ID: {user?.id}</p>
+          <p>DB Error: {JSON.stringify(userError)}</p>
+          <p>DB Data: {JSON.stringify(userData)}</p>
+        </div>
       </div>
 
       {/* Message */}
