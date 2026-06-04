@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
+import { getNegotiationSystemPrompt } from "@/utils/ai/prompts";
 import { negotiateGoalWithAI } from "@/utils/ai/claude";
 import { redirect } from "next/navigation";
 
@@ -21,14 +22,54 @@ export async function negotiateGoalAction(goalText: string, proofDescription: st
     target_goal: userData.target_goal
   } : undefined;
 
-  // Call the Claude AI Interrogator
   try {
-    const response = await negotiateGoalWithAI(goalText, proofDescription, userProfile);
-    return { success: true, data: response };
+    // MATRIX DEV MODE: Insert into matrix_requests for the human operator
+    const systemPrompt = getNegotiationSystemPrompt(userProfile);
+    const userPrompt = `My goal is: "${goalText}".\nI will prove it by: "${proofDescription}".`;
+
+    const { data: matrixReq, error: matrixErr } = await supabase
+      .from('matrix_requests')
+      .insert({
+        user_id: user.id,
+        system_prompt: systemPrompt,
+        user_prompt: userPrompt,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (matrixErr) {
+      console.error("Matrix Insert Error:", matrixErr);
+      throw new Error("Failed to queue Matrix request");
+    }
+
+    return { success: true, isMatrix: true, matrixRequestId: matrixReq.id };
   } catch (error: any) {
     console.error("AI Negotiation Error:", error);
     return { success: false, error: "AI failed to respond. Please try again." };
   }
+}
+
+export async function pollMatrixRequestAction(matrixRequestId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data, error } = await supabase
+    .from('matrix_requests')
+    .select('status, response_json')
+    .eq('id', matrixRequestId)
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  if (data.status === 'completed') {
+    return { success: true, isComplete: true, data: data.response_json };
+  }
+
+  return { success: true, isComplete: false };
 }
 
 export async function acceptAndLockGoal(

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { negotiateGoalAction, acceptAndLockGoal } from "./actions"
-import { Loader2, Sparkles, AlertTriangle } from "lucide-react"
+import { negotiateGoalAction, acceptAndLockGoal, pollMatrixRequestAction } from "./actions"
+import { Loader2, Sparkles, AlertTriangle, FastForward } from "lucide-react"
 
 export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const [goalText, setGoalText] = useState("")
@@ -21,6 +21,32 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const [topicList, setTopicList] = useState("")
   const [error, setError] = useState("")
   const [isLocking, setIsLocking] = useState(false)
+  const [matrixRequestId, setMatrixRequestId] = useState<string | null>(null)
+
+  // Polling effect for Matrix
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (matrixRequestId && isNegotiating) {
+      interval = setInterval(async () => {
+        try {
+          const res = await pollMatrixRequestAction(matrixRequestId);
+          if (res.success && res.isComplete) {
+            setNegotiationResult(res.data);
+            setIsNegotiating(false);
+            setMatrixRequestId(null);
+            clearInterval(interval);
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [matrixRequestId, isNegotiating]);
 
   const handleNegotiate = async () => {
     if (!goalText || !proofText) return;
@@ -67,11 +93,61 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
     const res = await negotiateGoalAction(goalText, proofText);
     if (res.success) {
-      setNegotiationResult(res.data);
+      if (res.isMatrix) {
+        setMatrixRequestId(res.matrixRequestId);
+      } else {
+        setNegotiationResult(res.data);
+        setIsNegotiating(false);
+      }
     } else {
       setError(res.error || "Something went wrong.");
+      setIsNegotiating(false);
     }
-    setIsNegotiating(false);
+  }
+
+  const handleBypass = async () => {
+    // Check balance before bypassing
+    const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
+    if (!pledgeRupees || pledgeRupees <= 0) return;
+    
+    const pledgePaise = pledgeRupees * 100;
+    if (availableBalance < pledgePaise) {
+      setError(`Insufficient balance. You need ₹${pledgeRupees} but only have ₹${availableBalance / 100}. Please load your wallet from the dashboard.`);
+      return;
+    }
+
+    setIsLocking(true);
+    let deadlineDate: Date;
+    if (hours === "custom") {
+      deadlineDate = new Date(customDeadline);
+    } else {
+      deadlineDate = new Date();
+      deadlineDate.setHours(deadlineDate.getHours() + parseInt(hours));
+    }
+
+    try {
+      await acceptAndLockGoal(
+        goalText,
+        proofText,
+        deadlineDate.toISOString(),
+        pledgeRupees,
+        'other', // dummy category
+        null,
+        {
+          is_goal_acceptable: true,
+          category: 'other',
+          negotiated_proof_description: 'Bypassed AI negotiation. Original proof: ' + proofText,
+          verification_requirements: ['Manual Bypass'],
+          timer_required_in_minutes: 0,
+          topic_list_required: false,
+          ai_message_to_user: 'You bypassed the AI.',
+          rejection_reason: null
+        }
+      );
+    } catch (e: any) {
+      setError(e.message || "Failed to lock commitment");
+      setIsLocking(false);
+    }
   }
 
   const handleLock = async () => {
@@ -222,32 +298,45 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
       {/* Negotiate Button */}
       {!negotiationResult ? (
-        <Button 
-          size="lg" 
-          className={`w-full font-black text-lg rounded-xl h-14 relative overflow-hidden transition-all duration-300 ${
-            !isNegotiating && goalText && proofText 
-              ? 'animate-sm-shimmer' 
-              : ''
-          }`}
-          onClick={handleNegotiate}
-          disabled={isNegotiating || !goalText || !proofText}
-        >
-          {isNegotiating ? (
-            <span className="flex items-center gap-3">
-              {/* Brain loading animation */}
-              <span className="relative">
-                <span className="text-2xl animate-sm-brain-pulse inline-block">🧠</span>
-                <Sparkles className="w-3 h-3 text-yellow-300 absolute -top-1 -right-1 animate-sm-sparkle" />
+        <div className="flex flex-col gap-3">
+          <Button 
+            size="lg" 
+            className={`w-full font-black text-lg rounded-xl h-14 relative overflow-hidden transition-all duration-300 ${
+              !isNegotiating && goalText && proofText 
+                ? 'animate-sm-shimmer' 
+                : ''
+            }`}
+            onClick={handleNegotiate}
+            disabled={isNegotiating || !goalText || !proofText}
+          >
+            {isNegotiating ? (
+              <span className="flex items-center gap-3">
+                {/* Brain loading animation */}
+                <span className="relative">
+                  <span className="text-2xl animate-sm-brain-pulse inline-block">🧠</span>
+                  <Sparkles className="w-3 h-3 text-yellow-300 absolute -top-1 -right-1 animate-sm-sparkle" />
+                </span>
+                <span>{matrixRequestId ? "Awaiting MATRIX (Check Admin)..." : "Analyzing Loopholes…"}</span>
               </span>
-              <span>Analyzing Loopholes…</span>
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              Negotiate with AI
-            </span>
-          )}
-        </Button>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Negotiate with AI
+              </span>
+            )}
+          </Button>
+
+          <Button 
+            size="lg" 
+            variant="outline"
+            className="w-full font-bold rounded-xl border-dashed border-white/20 text-muted-foreground hover:text-foreground hover:bg-white/5"
+            onClick={handleBypass}
+            disabled={isNegotiating || !goalText || !proofText || isLocking}
+          >
+            <FastForward className="w-4 h-4 mr-2" />
+            Bypass AI (Dev Mode)
+          </Button>
+        </div>
       ) : (
         /* AI Verdict */
         <div className="flex flex-col gap-6 animate-sm-slide-in-bottom">
