@@ -13,6 +13,7 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const [proofText, setProofText] = useState("")
   const [hours, setHours] = useState("2")
   const [pledge, setPledge] = useState("20")
+  const [customPledge, setCustomPledge] = useState("")
   
   const [isNegotiating, setIsNegotiating] = useState(false)
   const [negotiationResult, setNegotiationResult] = useState<any>(null)
@@ -22,6 +23,24 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
   const handleNegotiate = async () => {
     if (!goalText || !proofText) return;
+    
+    // Check balance before wasting AI credits
+    const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
+    if (!pledgeRupees || pledgeRupees <= 0) {
+      setError("Please enter a valid deposit amount.");
+      return;
+    }
+    if (pledgeRupees > 1000) {
+      setError("Maximum commitment deposit is ₹1000.");
+      return;
+    }
+    
+    const pledgePaise = pledgeRupees * 100;
+    if (availableBalance < pledgePaise) {
+      setError(`Insufficient balance. You need ₹${pledgeRupees} but only have ₹${availableBalance / 100}. Please load your wallet from the dashboard.`);
+      return;
+    }
+
     setIsNegotiating(true);
     setError("");
     setNegotiationResult(null);
@@ -42,11 +61,12 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
     deadlineDate.setHours(deadlineDate.getHours() + parseInt(hours));
 
     try {
+      const pledgeRupees = pledge === "custom" ? Number(customPledge) : Number(pledge);
       await acceptAndLockGoal(
         goalText,
         proofText,
         deadlineDate.toISOString(),
-        parseInt(pledge),
+        pledgeRupees,
         negotiationResult.category,
         negotiationResult.topic_list_required ? topicList : null,
         negotiationResult
@@ -128,8 +148,27 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
                   <SelectItem value="10">₹10 (Tiny Sting)</SelectItem>
                   <SelectItem value="20">₹20 (Standard)</SelectItem>
                   <SelectItem value="50">₹50 (Serious)</SelectItem>
+                  <SelectItem value="100">₹100 (Painful)</SelectItem>
+                  <SelectItem value="500">₹500 (Extreme)</SelectItem>
+                  <SelectItem value="1000">₹1000 (Maximum)</SelectItem>
+                  <SelectItem value="custom">Custom Amount</SelectItem>
                 </SelectContent>
               </Select>
+              
+              {pledge === "custom" && (
+                <div className="mt-2 relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                  <Input 
+                    type="number"
+                    min="1"
+                    max="1000"
+                    placeholder="Enter amount"
+                    value={customPledge}
+                    onChange={(e) => setCustomPledge(e.target.value)}
+                    className="pl-8 bg-card/50 border-white/[0.08] focus:border-primary/50 focus-glow rounded-xl h-10"
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -272,7 +311,7 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
                     ) : (
                       <span className="flex items-center gap-2">
                         <span>🔒</span>
-                        Accept & Lock ₹{pledge}
+                        Accept & Lock ₹{pledge === "custom" ? customPledge : pledge}
                       </span>
                     )}
                   </Button>
