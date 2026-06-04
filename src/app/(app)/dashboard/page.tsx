@@ -186,7 +186,7 @@ export default async function DashboardPage() {
                         <div className="p-4 rounded-xl glass-card border border-white/[0.06]">
                           <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Deadline</p>
                           <p className="font-black text-xl tabular-nums text-foreground">
-                            {new Date(activeGoal.deadline).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(activeGoal.deadline).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
