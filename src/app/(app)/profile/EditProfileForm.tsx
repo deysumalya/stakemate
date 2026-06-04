@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { updateProfileAction } from "./actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +10,7 @@ import { Loader2, User, Briefcase, Target, CheckCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export function EditProfileForm({ userDetails }: { userDetails: any }) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
@@ -23,6 +25,7 @@ export function EditProfileForm({ userDetails }: { userDetails: any }) {
     try {
       await updateProfileAction(formData)
       setSuccess(true)
+      router.refresh() // Force Next.js to re-fetch the server component data
       setTimeout(() => setSuccess(false), 3000)
     } catch (err: any) {
       setError(err.message || "Something went wrong")
