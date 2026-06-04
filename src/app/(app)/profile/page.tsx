@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, TrendingUp, Wallet, Trophy, UserCog, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { EditProfileForm } from "./EditProfileForm";
+import { GoalHistoryList } from "./GoalHistoryList";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export default async function ProfilePage({
   // Fetch all goals
   const { data: allGoals } = await supabase
     .from("goals")
-    .select("id, goal_text, pledge_amount, status, created_at, deadline, category")
+    .select("id, goal_text, proof_description, pledge_amount, status, created_at, deadline, category")
     .eq("user_id", user?.id)
     .order("created_at", { ascending: false });
 
@@ -183,63 +184,7 @@ export default async function ProfilePage({
           {/* Goal History */}
           <div className="animate-sm-fade-in-up stagger-4">
             <h2 className="text-2xl font-black tracking-tight mb-4">Goal History</h2>
-            {pastGoals && pastGoals.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {pastGoals.map((goal: any, index: number) => {
-                  const isPass = goal.effectiveStatus === "pass";
-                  const isForfeited = goal.status !== "resolved_fail" && goal.effectiveStatus === "fail";
-                  return (
-                    <div
-                      key={goal.id}
-                      className="animate-sm-fade-in-up"
-                      style={{ animationDelay: `${index * 0.06}s` }}
-                    >
-                      <Card className={`overflow-hidden glass-card card-hover-lift border-l-4 ${
-                        isPass ? 'border-l-primary' : 'border-l-destructive'
-                      } border border-white/[0.06]`}>
-                        <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-2">
-                              {/* Status badge with glow */}
-                              <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                isPass 
-                                  ? 'bg-primary/15 text-primary shadow-[0_0_10px_rgba(57,255,20,0.15)]' 
-                                  : 'bg-destructive/15 text-destructive shadow-[0_0_10px_rgba(255,59,48,0.15)]'
-                              }`}>
-                                {isPass ? "Passed" : isForfeited ? "Forfeited" : "Failed"}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(goal.created_at).toLocaleDateString()}
-                              </span>
-                              {goal.category && (
-                                <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
-                                  {goal.category}
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-medium text-foreground/90 truncate">{goal.goal_text}</p>
-                          </div>
-                          
-                          <div className="shrink-0 text-right">
-                            <p className="text-xs text-muted-foreground mb-0.5">Deposit</p>
-                            <p className={`font-black text-lg tabular-nums ${isPass ? 'text-primary' : 'text-destructive'}`}>
-                              {isPass ? '+' : '-'}₹{(goal.pledge_amount || 0) / 100}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card className="glass-card border border-white/[0.06]">
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center gap-4">
-                  <span className="text-5xl animate-sm-float inline-block">📋</span>
-                  <p className="text-muted-foreground">No completed goals yet. Start your first commitment!</p>
-                </CardContent>
-              </Card>
-            )}
+            <GoalHistoryList pastGoals={pastGoals} />
           </div>
         </>
       )}
