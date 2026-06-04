@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #0A0F1C; /* Deep navy */
+  --color-foreground: #F8FAFC; /* Slate 50 */
+  --color-primary: #39FF14; /* Electric green */
+  --color-primary-foreground: #000000;
+  --color-destructive: #FF3B30; /* Warm red */
+  --color-destructive-foreground: #FFFFFF;
+  --color-muted: #1E293B; /* Slate 800 */
+  --color-muted-foreground: #94A3B8; /* Slate 400 */
+  --color-card: #0F172A; /* Slate 900 */
+  --color-card-foreground: #F8FAFC;
+  --color-border: #1E293B;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+      display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+  }
+}
