@@ -16,12 +16,11 @@ export default async function ProfilePage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Fetch past goals (V2: resolved_pass / resolved_fail)
-  const { data: pastGoals } = await supabase
+  // Fetch all goals
+  const { data: allGoals } = await supabase
     .from("goals")
     .select("id, goal_text, pledge_amount, status, created_at, deadline, category")
     .eq("user_id", user?.id)
-    .in("status", ["resolved_pass", "resolved_fail"])
     .order("created_at", { ascending: false });
 
   // Fetch user details (V2 columns)
@@ -35,14 +34,32 @@ export default async function ProfilePage({
     redirect("/onboarding");
   }
 
+  // Categorize goals
+  const now = new Date();
+  const pastGoals = (allGoals || []).filter((g: any) => {
+    if (g.status === "resolved_pass" || g.status === "resolved_fail") return true;
+    if (new Date(g.deadline) <= now) return true; // Missed deadline = forfeited
+    return false;
+  }).map((g: any) => ({
+    ...g,
+    // Normalize status so UI treats missed deadlines as failed
+    effectiveStatus: g.status === "resolved_pass" ? "pass" : "fail"
+  }));
+
   // Calculate stats
-  const safePastGoals = pastGoals || [];
-  const totalGoals = safePastGoals.length;
-  const passedGoals = safePastGoals.filter((g: any) => g.status === "resolved_pass").length;
+  const totalGoals = pastGoals.length;
+  const passedGoals = pastGoals.filter((g: any) => g.effectiveStatus === "pass").length;
   const passRate = totalGoals > 0 ? Math.round((passedGoals / totalGoals) * 100) : 0;
-  const totalPledged = safePastGoals.reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
-  const totalWonBack = safePastGoals
-    .filter((g: any) => g.status === "resolved_pass")
+  
+  // Total pledged across ALL goals ever (active + past)
+  const totalPledged = (allGoals || []).reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
+  
+  const totalWonBack = pastGoals
+    .filter((g: any) => g.effectiveStatus === "pass")
+    .reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
+    
+  const totalMoneyLost = pastGoals
+    .filter((g: any) => g.effectiveStatus === "fail")
     .reduce((sum: number, g: any) => sum + (g.pledge_amount || 0), 0);
 
   return (
@@ -101,7 +118,7 @@ export default async function ProfilePage({
       ) : (
         <>
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-sm-fade-in-up stagger-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-sm-fade-in-up stagger-2">
             <StatCard
               icon={<Target className="w-4 h-4 text-primary" />}
               label="Total Goals"
@@ -116,7 +133,7 @@ export default async function ProfilePage({
               delay={2}
             />
             <StatCard
-              icon={<Wallet className="w-4 h-4 text-orange-400" />}
+              icon={<Wallet className="w-4 h-4 text-blue-400" />}
               label="Total Pledged"
               value={`₹${totalPledged / 100}`}
               delay={3}
@@ -127,6 +144,13 @@ export default async function ProfilePage({
               value={`₹${totalWonBack / 100}`}
               accent="text-primary"
               delay={4}
+            />
+            <StatCard
+              icon={<TrendingUp className="w-4 h-4 text-destructive rotate-180" />}
+              label="Money Lost"
+              value={`₹${totalMoneyLost / 100}`}
+              accent="text-destructive"
+              delay={5}
             />
           </div>
 
@@ -162,7 +186,8 @@ export default async function ProfilePage({
             {pastGoals && pastGoals.length > 0 ? (
               <div className="flex flex-col gap-3">
                 {pastGoals.map((goal: any, index: number) => {
-                  const isPass = goal.status === "resolved_pass";
+                  const isPass = goal.effectiveStatus === "pass";
+                  const isForfeited = goal.status !== "resolved_fail" && goal.effectiveStatus === "fail";
                   return (
                     <div
                       key={goal.id}
@@ -181,7 +206,7 @@ export default async function ProfilePage({
                                   ? 'bg-primary/15 text-primary shadow-[0_0_10px_rgba(57,255,20,0.15)]' 
                                   : 'bg-destructive/15 text-destructive shadow-[0_0_10px_rgba(255,59,48,0.15)]'
                               }`}>
-                                {isPass ? "Passed" : "Failed"}
+                                {isPass ? "Passed" : isForfeited ? "Forfeited" : "Failed"}
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(goal.created_at).toLocaleDateString()}
