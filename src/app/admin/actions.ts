@@ -52,27 +52,25 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
     return { success: false, error: "Admin strictly unauthorized" };
   }
 
-  // Create an admin client bypassing RLS
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+  // We rely on Supabase RLS policies to grant admin powers to this email,
+  // so we can just use the authenticated client for all operations.
 
   if (verdict === 'pass') {
     // 1. Mark report as resolved
-    await supabaseAdmin.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    await supabaseAuth.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_pass
-    await supabaseAdmin.from('goals').update({ status: 'resolved_pass' }).eq('id', goalId);
+    await supabaseAuth.from('goals').update({ status: 'resolved_pass' }).eq('id', goalId);
     
     // 3. Refund the money to available balance (since it was deducted upon failure)
     // First get current balance
-    const { data: userData } = await supabaseAdmin.from('users').select('available_balance').eq('id', userId).single();
+    const { data: userData } = await supabaseAuth.from('users').select('available_balance').eq('id', userId).single();
     if (userData) {
       const newBalance = userData.available_balance + pledgeAmount;
-      await supabaseAdmin.from('users').update({ available_balance: newBalance }).eq('id', userId);
+      await supabaseAuth.from('users').update({ available_balance: newBalance }).eq('id', userId);
 
       // Log wallet transaction as refund
-      await supabaseAdmin.from('wallet_transactions').insert({
+      await supabaseAuth.from('wallet_transactions').insert({
         user_id: userId,
         type: 'refund',
         amount: pledgeAmount,
@@ -83,11 +81,11 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
 
   } else if (verdict === 'fail') {
     // 1. Mark report as resolved
-    await supabaseAdmin.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    await supabaseAuth.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_fail
     // If it was already failed/forfeited, we don't need to deduct money again. 
-    await supabaseAdmin.from('goals').update({ status: 'resolved_fail' }).eq('id', goalId);
+    await supabaseAuth.from('goals').update({ status: 'resolved_fail' }).eq('id', goalId);
   }
 
   return { success: true };

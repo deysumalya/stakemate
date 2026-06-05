@@ -20,13 +20,11 @@ export default async function AdminDashboard() {
     redirect("/admin/login")
   }
 
-  // Create an admin client bypassing RLS
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+  // We use the authenticated user's client. 
+  // We will rely on a new RLS policy in Supabase that grants admin rights to this specific email.
 
   // Fetch pending reports with goal details
-  const { data: pendingReports, error: fetchError } = await supabaseAdmin
+  const { data: pendingReports, error: fetchError } = await supabaseAuth
     .from("reports")
     .select(`
       id,
@@ -80,7 +78,7 @@ export default async function AdminDashboard() {
                 <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-md mb-6">
                   <p className="text-red-400 font-bold mb-2">Database Error</p>
                   <p className="text-sm font-mono text-red-300">{fetchError.message}</p>
-                  <p className="text-xs text-red-300/70 mt-2">Hint: You may need to add SUPABASE_SERVICE_ROLE_KEY to your Vercel environment variables, or apply the reports table migration.</p>
+                  <p className="text-xs text-red-300/70 mt-2">Hint: You need to apply the Admin RLS policies in Supabase SQL Editor.</p>
                 </div>
               )}
               {pendingReports && pendingReports.length > 0 ? (
