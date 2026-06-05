@@ -5,7 +5,7 @@ import { generateMCQs, judgeProofWithVision } from "@/utils/ai/claude";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { MCQ_GENERATION_PROMPT } from "@/utils/ai/prompts";
+import { MCQ_GENERATION_PROMPT, VISION_JUDGMENT_PROMPT } from "@/utils/ai/prompts";
 
 export async function generateQuizAction(goalId: string, topicList: string) {
   const supabase = await createClient();
@@ -86,7 +86,6 @@ export async function submitProofAction(formData: FormData) {
   if (!goal) throw new Error("Goal not found");
 
   // Call Claude Vision to judge - MOVED TO MATRIX
-  const { VISION_JUDGMENT_PROMPT } = await import('@/utils/ai/prompts');
   const userPrompt = JSON.stringify({
     type: "PROOF_JUDGMENT",
     goal_id: goalId,

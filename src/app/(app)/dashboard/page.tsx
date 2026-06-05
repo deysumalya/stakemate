@@ -167,6 +167,21 @@ export default async function DashboardPage() {
                     </div>
                   )}
 
+                  {activeGoal.status === "judging" && (
+                    <div className="p-5 rounded-xl bg-primary/[0.05] border border-primary/20 animate-sm-glow-ring">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                        </span>
+                        <p className="font-bold text-sm text-primary">AI is verifying your proof…</p>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Hold tight! The AI is analyzing your answers and images. Your deposit will be returned if verified.
+                      </p>
+                    </div>
+                  )}
+
                   {activeGoal.status === "in_quiz" && (
                     <div className="flex flex-col gap-4">
                       <div className="p-5 rounded-xl bg-destructive/[0.06] border border-destructive/15 text-center">

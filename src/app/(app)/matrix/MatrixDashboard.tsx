@@ -54,8 +54,12 @@ export function MatrixDashboard({ initialRequests }: { initialRequests: any[] })
     <div className="flex flex-col gap-6">
       {requests.map(req => {
         let displayPrompt = req.user_prompt;
+        let proofUrls: string[] = [];
         try {
           const parsed = JSON.parse(req.user_prompt);
+          if (parsed.proofUrls && Array.isArray(parsed.proofUrls)) {
+            proofUrls = parsed.proofUrls;
+          }
           displayPrompt = JSON.stringify(parsed, null, 2);
         } catch(e) {}
 
@@ -74,6 +78,19 @@ export function MatrixDashboard({ initialRequests }: { initialRequests: any[] })
             <div className="bg-card/50 p-4 rounded-lg overflow-x-auto">
               <pre className="text-xs font-mono text-foreground/80">{displayPrompt}</pre>
             </div>
+
+            {proofUrls.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Uploaded Proof Images:</label>
+                <div className="flex flex-wrap gap-4">
+                  {proofUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`Proof ${i}`} className="h-32 rounded-lg border border-white/10 hover:border-primary transition-colors cursor-pointer" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Paste Claude's JSON Response here:</label>
