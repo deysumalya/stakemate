@@ -32,8 +32,15 @@ export default async function VerifyPage({
 
   if (!goal) redirect("/dashboard");
 
-  // Only allow verification for active or in_quiz goals
   if (!["active", "in_quiz"].includes(goal.status)) {
+    redirect("/dashboard");
+  }
+
+  // If the goal is already in_quiz, it means the user refreshed the page or navigated away and came back
+  // This is treated as abandoning the quiz. We automatically fail them.
+  if (goal.status === "in_quiz") {
+    const { failAbandonedQuizAction } = await import("./abandonAction");
+    await failAbandonedQuizAction(goal.id);
     redirect("/dashboard");
   }
 

@@ -469,6 +469,18 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
                     <p className="text-sm text-foreground/80">We clarified your goal slightly to make it measurable. Please review the updated goal above to ensure it's what you meant.</p>
                   </div>
                 )}
+
+                {negotiationResult.category === 'academics' && (
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-xl p-4 mt-1 animate-sm-fade-in-up">
+                    <p className="text-orange-400 font-bold text-sm mb-1 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" /> 
+                      Academics Rule
+                    </p>
+                    <p className="text-sm text-foreground/80 leading-relaxed">
+                      You will be required to complete <strong>3 MCQs</strong> and upload your proof from your device camera within a total of <strong>12 minutes</strong>. To pass, you must either get all 3 correct (with or without photo), OR get at least 1 correct AND upload a valid rough work photo.
+                    </p>
+                  </div>
+                )}
                 
                 {/* Verification Checklist */}
                 <div className="mt-2 p-5 bg-background/40 rounded-xl border border-white/[0.06]">

@@ -22,7 +22,7 @@ CRITICAL RULES:
 - For programming goals: require a single photo of their screen showing the code editor with visible code.
 - For other goals: ask for a single, verifiable photo (e.g., photo of the finished work with a handwritten note showing today's date).
 - If the goal is poorly worded but the intent is reasonably inferable (e.g., 'watch videos' likely means 'study from videos'), reframe it into a clean, outcome-oriented goal statement rather than rejecting it. Return the corrected version in the JSON.
-- If a timed quiz/test is needed, set \`timer_required_in_minutes\` to at least 3 minutes per question (e.g., 9 minutes for 3 questions).
+- If a timed quiz/test is needed for academics, set \`timer_required_in_minutes\` strictly to 12 minutes exactly (9 minutes for 3 MCQs + 3 minutes for uploading the photo).
 
 Respond ONLY in this exact JSON format, no other text or markdown block formatting:
 {
@@ -40,7 +40,7 @@ Respond ONLY in this exact JSON format, no other text or markdown block formatti
 
 export const MCQ_GENERATION_PROMPT = `You are generating a quiz for an Indian student on Stakemate.
 They committed to studying specific topics.
-Generate exactly 3 multiple-choice questions at an easy to moderate difficulty level based on their topics.
+Generate exactly 3 multiple-choice questions at an easy difficulty level based on their topics.
 Each question must require calculation or conceptual understanding — no definition questions.
 Respond ONLY in this exact JSON format, no other text:
 {
@@ -64,8 +64,11 @@ You will receive:
 
 YOUR JUDGMENT RULES:
 1. If proof image URLs are provided, you MUST analyze them against the negotiated proof description.
-2. If NO proof images are provided (empty array), you should FAIL the goal unless the MCQ score alone is sufficient (3/3 correct for academics).
-3. For academics: Check MCQ answers — are at least 2 out of 3 correct? Does the photo show handwritten notes consistent with the topics studied?
+2. If NO proof images are provided (empty array), you should FAIL the goal unless the MCQ score alone is sufficient (as defined below).
+3. For academics to PASS:
+   - Scenario A: The user gets all 3 MCQs correct (3/3), even if no photo or a bad photo is uploaded.
+   - Scenario B: The user gets at least 1 MCQ correct (1/3 or 2/3) AND uploads a correct, verifiable rough work photo matching the topics.
+   - If they score 0/3, or if they score 1/3 or 2/3 but fail to provide a valid photo, they FAIL.
 4. For programming: Does the photo show actual code on a screen? Does it look like custom work (not a template)?
 5. For other categories: Does the photo reasonably match what was promised in the negotiated proof description?
 6. Be reasonable but strict. The user staked real money, so give benefit of doubt for genuine effort, but FAIL lazy or fake attempts.
