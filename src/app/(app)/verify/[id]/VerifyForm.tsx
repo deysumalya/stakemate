@@ -132,18 +132,35 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
 
   const handleSubmit = async () => {
     setPhase('submitting')
-    const formData = new FormData()
-    formData.append('goalId', goal.id)
-    formData.append('category', goal.category)
-    formData.append('userAnswers', JSON.stringify(userAnswers))
-    files.forEach(file => formData.append('proofFiles', file))
-
+    setError('')
+    
     try {
+      // Convert files to base64 data URLs on the client side
+      const base64Urls: string[] = []
+      for (const file of files) {
+        if (file.size === 0) continue
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+        base64Urls.push(base64)
+      }
+
+      const formData = new FormData()
+      formData.append('goalId', goal.id)
+      formData.append('category', goal.category)
+      formData.append('userAnswers', JSON.stringify(userAnswers))
+      formData.append('proofBase64', JSON.stringify(base64Urls))
+      // Still send files for Supabase storage attempt
+      files.forEach(file => formData.append('proofFiles', file))
+
       const result = await submitProofAction(formData)
       if (result?.success) {
         router.push('/dashboard')
       } else {
-        setError("Submission failed. Please try again.")
+        setError(result?.error || "Submission failed. Please try again.")
         setPhase('upload')
       }
     } catch (e: any) {

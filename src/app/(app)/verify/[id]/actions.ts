@@ -79,9 +79,20 @@ export async function submitProofAction(formData: FormData) {
       }
     }
 
+    // Fallback: if storage upload failed, use base64 data URLs sent from client
+    let finalProofUrls = proofUrls;
+    if (proofUrls.length === 0) {
+      const base64Raw = formData.get('proofBase64') as string;
+      if (base64Raw) {
+        try {
+          finalProofUrls = JSON.parse(base64Raw) as string[];
+        } catch { /* ignore parse errors */ }
+      }
+    }
+
     // Update goal with proof URLs and user answers
     const { error: updateErr } = await supabase.from('goals').update({
-      proof_urls: proofUrls,
+      proof_urls: finalProofUrls,
       user_answers: userAnswers,
       status: 'judging',
       submitted_at: new Date().toISOString()
@@ -119,7 +130,7 @@ export async function submitProofAction(formData: FormData) {
       category: category,
       negotiated_proof_description: goal.negotiation_json?.negotiated_proof_description || goal.proof_description || "No specific proof was negotiated",
       verification_requirements: goal.negotiation_json?.verification_requirements || [],
-      proofUrls: proofUrls,
+      proofUrls: finalProofUrls,
       topicList: goal.topic_list || undefined,
       mcq_answers: mcqAnswerData,
       mcq_correct_count: mcqAnswerData ? mcqAnswerData.filter((a: any) => a.is_correct).length : null,
