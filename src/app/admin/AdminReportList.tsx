@@ -61,7 +61,7 @@ export function AdminReportList({ reports }: { reports: any[] }) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Current Status</p>
-                <p className="text-sm font-medium capitalize">{goal?.status.replace('_', ' ')} (Effective: {goal?.effective_status})</p>
+                <p className="text-sm font-medium capitalize">{goal?.status.replace('_', ' ')}</p>
               </div>
               <div className="md:col-span-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Required Proof</p>

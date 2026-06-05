@@ -39,7 +39,6 @@ export default async function AdminDashboard() {
         proof_description,
         pledge_amount,
         status,
-        effective_status,
         deadline,
         created_at
       ),

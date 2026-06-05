@@ -62,7 +62,7 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
     await supabaseAdmin.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_pass
-    await supabaseAdmin.from('goals').update({ status: 'resolved_pass', effective_status: 'pass' }).eq('id', goalId);
+    await supabaseAdmin.from('goals').update({ status: 'resolved_pass' }).eq('id', goalId);
     
     // 3. Refund the money to available balance (since it was deducted upon failure)
     // First get current balance
@@ -87,7 +87,7 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
     
     // 2. Mark goal as resolved_fail
     // If it was already failed/forfeited, we don't need to deduct money again. 
-    await supabaseAdmin.from('goals').update({ status: 'resolved_fail', effective_status: 'fail' }).eq('id', goalId);
+    await supabaseAdmin.from('goals').update({ status: 'resolved_fail' }).eq('id', goalId);
   }
 
   return { success: true };
