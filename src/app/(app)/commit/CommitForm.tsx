@@ -34,6 +34,9 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
         try {
           const res = await pollMatrixRequestAction(matrixRequestId);
           if (res.success && res.isComplete) {
+            if (res.data.corrected_goal) {
+              setGoalText(res.data.corrected_goal);
+            }
             setNegotiationResult(res.data);
             setIsNegotiating(false);
             setMatrixRequestId(null);
@@ -98,6 +101,9 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
       if (res.isMatrix) {
         setMatrixRequestId(res.matrixRequestId);
       } else {
+        if (res.data && res.data.corrected_goal) {
+          setGoalText(res.data.corrected_goal);
+        }
         setNegotiationResult(res.data);
         setIsNegotiating(false);
       }
@@ -402,6 +408,13 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
             ) : (
               <div className="flex flex-col gap-5 relative">
                 <p className="text-foreground/90 leading-relaxed">{negotiationResult.ai_message_to_user}</p>
+                
+                {negotiationResult.corrected_goal && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mt-1">
+                    <p className="text-primary font-bold text-sm mb-1">AI Coach Note:</p>
+                    <p className="text-sm text-foreground/80">We clarified your goal slightly to make it measurable. Please review the updated goal above to ensure it's what you meant.</p>
+                  </div>
+                )}
                 
                 {/* Verification Checklist */}
                 <div className="mt-2 p-5 bg-background/40 rounded-xl border border-white/[0.06]">

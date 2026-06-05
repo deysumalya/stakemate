@@ -18,10 +18,12 @@ CRITICAL RULES:
 - For academics goals: require listing specific chapter topics (we will generate MCQs at deadline), plus a photo of their notes.
 - For programming goals: require a code screenshot and/or terminal output.
 - For other goals: ask for a simple, verifiable photo (e.g., photo of the finished dish with a handwritten note with today's date).
+- If the goal is poorly worded but the intent is reasonably inferable (e.g., 'watch videos' likely means 'study from videos'), reframe it into a clean, outcome-oriented goal statement rather than rejecting it. Return the corrected version in the JSON.
 
 Respond ONLY in this exact JSON format, no other text or markdown block formatting:
 {
   "is_goal_acceptable": true,
+  "corrected_goal": "Study Matrices (determinants, inverse, linear equations) using video resources",
   "category": "academics",
   "negotiated_proof_description": "Exactly what the user must submit at deadline",
   "verification_requirements": ["requirement 1", "requirement 2"],

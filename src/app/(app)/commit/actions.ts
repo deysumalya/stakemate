@@ -44,10 +44,10 @@ export async function negotiateGoalAction(goalText: string, proofDescription: st
       throw new Error("Failed to queue Matrix request");
     }
 
-    return { success: true, isMatrix: true, matrixRequestId: matrixReq.id, data: null };
+    return { success: true, isMatrix: true, matrixRequestId: matrixReq.id, data: null as any };
   } catch (error: any) {
     console.error("AI Negotiation Error:", error);
-    return { success: false, error: "AI failed to respond. Please try again.", isMatrix: false, matrixRequestId: null, data: null };
+    return { success: false, error: "AI failed to respond. Please try again.", isMatrix: false, matrixRequestId: null, data: null as any };
   }
 }
 
