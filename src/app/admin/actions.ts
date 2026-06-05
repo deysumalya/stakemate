@@ -62,12 +62,16 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
     // 2. Mark goal as resolved_pass
     await supabaseAuth.from('goals').update({ status: 'resolved_pass' }).eq('id', goalId);
     
-    // 3. Refund the money to available balance (since it was deducted upon failure)
-    // First get current balance
-    const { data: userData } = await supabaseAuth.from('users').select('available_balance').eq('id', userId).single();
+    // 3. Refund the money to available balance and update streak
+    // First get current balance and streak
+    const { data: userData } = await supabaseAuth.from('users').select('available_balance, streak').eq('id', userId).single();
     if (userData) {
       const newBalance = userData.available_balance + pledgeAmount;
-      await supabaseAuth.from('users').update({ available_balance: newBalance }).eq('id', userId);
+      await supabaseAuth.from('users').update({ 
+        available_balance: newBalance,
+        streak: (userData.streak || 0) + 1,
+        consecutive_fails: 0
+      }).eq('id', userId);
 
       // Log wallet transaction as refund
       await supabaseAuth.from('wallet_transactions').insert({
@@ -84,8 +88,17 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
     await supabaseAuth.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_fail
-    // If it was already failed/forfeited, we don't need to deduct money again. 
+    // If it was already failed/forfeited, we don't need to deduct money again, but we should update stats
     await supabaseAuth.from('goals').update({ status: 'resolved_fail' }).eq('id', goalId);
+    
+    // Update streak for failure
+    const { data: userData } = await supabaseAuth.from('users').select('consecutive_fails').eq('id', userId).single();
+    if (userData) {
+      await supabaseAuth.from('users').update({ 
+        streak: 0,
+        consecutive_fails: (userData.consecutive_fails || 0) + 1
+      }).eq('id', userId);
+    }
   }
 
   return { success: true };
