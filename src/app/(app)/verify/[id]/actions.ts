@@ -5,21 +5,38 @@ import { generateMCQs, judgeProofWithVision } from "@/utils/ai/claude";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+import { MCQ_GENERATION_PROMPT } from "@/utils/ai/prompts";
+
 export async function generateQuizAction(goalId: string, topicList: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
-  // Generate MCQs
-  const mcqJson = await generateMCQs(topicList);
+  const userPrompt = JSON.stringify({
+    type: "MCQ_GENERATION",
+    goal_id: goalId,
+    topics: topicList
+  }, null, 2);
 
-  // Save to goal & update status
-  await supabase.from('goals').update({
-    mcq_json: mcqJson,
-    status: 'in_quiz'
-  }).eq('id', goalId).eq('user_id', user.id);
+  const { data: matrixReq, error: matrixErr } = await supabase
+    .from('matrix_requests')
+    .insert({
+      user_id: user.id,
+      system_prompt: MCQ_GENERATION_PROMPT,
+      user_prompt: userPrompt,
+      status: 'pending'
+    })
+    .select('id')
+    .single();
 
-  return mcqJson;
+  if (matrixErr) {
+    console.error("Matrix Insert Error:", matrixErr);
+    throw new Error("Failed to queue MCQ request");
+  }
+
+  // Set goal status to waiting_quiz (or keep it active, but we need to know it's pending)
+  // Let's just return the matrix request ID
+  return { success: true, matrixRequestId: matrixReq.id };
 }
 
 export async function submitProofAction(formData: FormData) {
@@ -68,73 +85,30 @@ export async function submitProofAction(formData: FormData) {
 
   if (!goal) throw new Error("Goal not found");
 
-  // Call Claude Vision to judge
-  let verdictJson;
-  try {
-    verdictJson = await judgeProofWithVision(
-      category,
-      proofUrls,
-      {
-        topicList: goal.topic_list || undefined,
-        userAnswers: userAnswers,
-        mcqJson: goal.mcq_json || undefined
-      }
-    );
-  } catch (e) {
-    console.error("Claude Vision error:", e);
-    verdictJson = { verdict: "FAIL", reasoning: "AI judge could not process the proof. Please try again.", mcq_score: 0, work_quality: "insufficient" };
-  }
+  // Call Claude Vision to judge - MOVED TO MATRIX
+  const { VISION_JUDGMENT_PROMPT } = await import('@/utils/ai/prompts');
+  const userPrompt = JSON.stringify({
+    type: "PROOF_JUDGMENT",
+    goal_id: goalId,
+    category: category,
+    proofUrls: proofUrls,
+    topicList: goal.topic_list || undefined,
+    userAnswers: userAnswers,
+    mcqJson: goal.mcq_json || undefined
+  }, null, 2);
 
-  const isPassed = verdictJson.verdict === "PASS";
+  const { error: matrixErr } = await supabase
+    .from('matrix_requests')
+    .insert({
+      user_id: user.id,
+      system_prompt: VISION_JUDGMENT_PROMPT,
+      user_prompt: userPrompt,
+      status: 'pending'
+    });
 
-  // Resolve the goal
-  await supabase.from('goals').update({
-    verdict_json: verdictJson,
-    status: isPassed ? 'resolved_pass' : 'resolved_fail',
-    resolved_at: new Date().toISOString()
-  }).eq('id', goalId);
-
-  // Update wallet balances
-  const { data: userData } = await supabase.from('users')
-    .select('available_balance, pledged_balance, streak, consecutive_fails')
-    .eq('id', user.id)
-    .single();
-
-  if (userData) {
-    const pledgeAmount = goal.pledge_amount || 0;
-
-    if (isPassed) {
-      // PASS: pledged -> available (money returns)
-      await supabase.from('users').update({
-        available_balance: userData.available_balance + pledgeAmount,
-        pledged_balance: userData.pledged_balance - pledgeAmount,
-        streak: userData.streak + 1,
-        consecutive_fails: 0
-      }).eq('id', user.id);
-
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        type: 'unlock',
-        amount: pledgeAmount,
-        balance_after: userData.available_balance + pledgeAmount,
-        notes: 'Passed: ' + goal.goal_text.substring(0, 50)
-      });
-    } else {
-      // FAIL: pledged balance removed entirely (platform profit)
-      await supabase.from('users').update({
-        pledged_balance: userData.pledged_balance - pledgeAmount,
-        streak: 0,
-        consecutive_fails: userData.consecutive_fails + 1
-      }).eq('id', user.id);
-
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        type: 'forfeit',
-        amount: pledgeAmount,
-        balance_after: userData.available_balance,
-        notes: 'Failed: ' + goal.goal_text.substring(0, 50)
-      });
-    }
+  if (matrixErr) {
+    console.error("Matrix Insert Error:", matrixErr);
+    throw new Error("Failed to queue Proof Judgment request");
   }
 
   revalidatePath('/dashboard');

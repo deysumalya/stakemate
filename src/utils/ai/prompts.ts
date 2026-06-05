@@ -19,6 +19,7 @@ CRITICAL RULES:
 - For programming goals: require a code screenshot and/or terminal output.
 - For other goals: ask for a simple, verifiable photo (e.g., photo of the finished dish with a handwritten note with today's date).
 - If the goal is poorly worded but the intent is reasonably inferable (e.g., 'watch videos' likely means 'study from videos'), reframe it into a clean, outcome-oriented goal statement rather than rejecting it. Return the corrected version in the JSON.
+- If a timed quiz/test is needed, set \`timer_required_in_minutes\` to at least 3 minutes per question (e.g., 9 minutes for 3 questions).
 
 Respond ONLY in this exact JSON format, no other text or markdown block formatting:
 {
@@ -36,7 +37,7 @@ Respond ONLY in this exact JSON format, no other text or markdown block formatti
 
 export const MCQ_GENERATION_PROMPT = `You are generating a quiz for an Indian student on Stakemate.
 They committed to studying specific topics.
-Generate exactly 3 multiple-choice questions at JEE/WBJEE/board difficulty level based on their topics.
+Generate exactly 3 multiple-choice questions at an easy to moderate difficulty level based on their topics.
 Each question must require calculation or conceptual understanding — no definition questions.
 Respond ONLY in this exact JSON format, no other text:
 {
@@ -63,4 +64,16 @@ Respond ONLY in this exact JSON format, no other text:
   "reasoning": "One sentence plain English explanation shown to user",
   "mcq_score": 2,
   "work_quality": "sufficient|insufficient|excellent"
+}`;
+
+export const TOPIC_VERIFICATION_PROMPT = `[TOPIC_VERIFICATION] 
+You are an AI assistant verifying a topic list submitted by a student on Stakemate.
+The student has submitted this list of topics to study. 
+Your job is to verify that these topics are genuine academic or technical subjects.
+Reject nonsense inputs like "banana", "nothing", or random keyboard mashes.
+
+Respond ONLY in this exact JSON format:
+{
+  "is_valid": true,
+  "reason": "If invalid, explain why in one short sentence. Otherwise, leave null."
 }`;

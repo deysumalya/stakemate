@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { negotiateGoalAction, acceptAndLockGoal, pollMatrixRequestAction } from "./actions"
+import { negotiateGoalAction, acceptAndLockGoal, pollMatrixRequestAction, verifyTopicListAction } from "./actions"
 import { Loader2, Sparkles, AlertTriangle, FastForward } from "lucide-react"
 
 export function CommitForm({ availableBalance }: { availableBalance: number }) {
@@ -24,6 +24,7 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
   const [error, setError] = useState("")
   const [isLocking, setIsLocking] = useState(false)
   const [matrixRequestId, setMatrixRequestId] = useState<string | null>(null)
+  const [topicMatrixRequestId, setTopicMatrixRequestId] = useState<string | null>(null)
 
   // Polling effect for Matrix
   useEffect(() => {
@@ -52,6 +53,37 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
       if (interval) clearInterval(interval);
     };
   }, [matrixRequestId, isNegotiating]);
+
+  // Polling effect for Topic Verification Matrix
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (topicMatrixRequestId && isLocking) {
+      interval = setInterval(async () => {
+        try {
+          const res = await pollMatrixRequestAction(topicMatrixRequestId);
+          if (res.success && res.isComplete) {
+            setTopicMatrixRequestId(null);
+            clearInterval(interval);
+            
+            if (res.data.is_valid) {
+              // Proceed to lock goal
+              finalizeLock();
+            } else {
+              setError(res.data.reason || "Invalid topic list. Please revise it.");
+              setIsLocking(false);
+            }
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [topicMatrixRequestId, isLocking]);
 
   const handleNegotiate = async () => {
     if (!goalText || !proofText) return;
@@ -167,6 +199,28 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
 
   const handleLock = async () => {
     setIsLocking(true);
+    setError("");
+
+    if (negotiationResult.topic_list_required && topicList.trim().length > 0) {
+      const res = await verifyTopicListAction(topicList, negotiationResult.category, goalText);
+      if (res.success) {
+        setTopicMatrixRequestId(res.matrixRequestId);
+        return; // wait for polling
+      } else {
+        setError(res.error || "Verification failed");
+        setIsLocking(false);
+        return;
+      }
+    } else if (negotiationResult.topic_list_required && topicList.trim().length === 0) {
+      setError("Topic list is required");
+      setIsLocking(false);
+      return;
+    }
+
+    finalizeLock();
+  }
+
+  const finalizeLock = async () => {
     // Calculate deadline
     let deadlineDate: Date;
     if (hours === "custom") {
@@ -472,7 +526,14 @@ export function CommitForm({ availableBalance }: { availableBalance: number }) {
                     disabled={isLocking || (negotiationResult.topic_list_required && !topicList)}
                   >
                     {isLocking ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      topicMatrixRequestId ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Awaiting Matrix...
+                        </span>
+                      ) : (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      )
                     ) : (
                       <span className="flex items-center gap-2">
                         <span>🔒</span>

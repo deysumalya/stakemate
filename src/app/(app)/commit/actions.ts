@@ -73,6 +73,39 @@ export async function pollMatrixRequestAction(matrixRequestId: string) {
   return { success: true, isComplete: false };
 }
 
+export async function verifyTopicListAction(topicList: string, category: string, goalText: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { TOPIC_VERIFICATION_PROMPT } = await import('@/utils/ai/prompts');
+
+  const userPrompt = `Goal: "${goalText}"\nCategory: ${category}\nTopic List: "${topicList}"`;
+
+  try {
+    const { data: matrixReq, error: matrixErr } = await supabase
+      .from('matrix_requests')
+      .insert({
+        user_id: user.id,
+        system_prompt: TOPIC_VERIFICATION_PROMPT,
+        user_prompt: userPrompt,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (matrixErr) {
+      console.error("Matrix Insert Error:", matrixErr);
+      throw new Error("Failed to queue Topic Verification request");
+    }
+
+    return { success: true, matrixRequestId: matrixReq.id };
+  } catch (error: any) {
+    console.error("Topic Verification Error:", error);
+    return { success: false, error: "Verification system offline." };
+  }
+}
+
 export async function acceptAndLockGoal(
   goalText: string, 
   proofDescription: string, 

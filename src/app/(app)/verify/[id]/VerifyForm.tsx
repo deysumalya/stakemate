@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Loader2, Upload, Clock, Brain, CheckCircle, XCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { generateQuizAction, submitProofAction } from "./actions"
+import { pollMatrixRequestAction } from "../../commit/actions"
 
 interface GoalData {
   id: string
@@ -19,31 +20,66 @@ interface GoalData {
 
 export function VerifyForm({ goal }: { goal: GoalData }) {
   const [phase, setPhase] = useState<'loading_quiz' | 'quiz' | 'upload' | 'submitting' | 'done'>(
-    goal.category === 'academics' && !goal.mcq_json ? 'loading_quiz' : 'upload'
+    goal.category === 'academics' ? (goal.mcq_json ? 'quiz' : 'loading_quiz') : 'upload'
   )
   const [mcqData, setMcqData] = useState<any>(goal.mcq_json || null)
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({})
   const [files, setFiles] = useState<File[]>([])
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [error, setError] = useState("")
+  const [mcqMatrixRequestId, setMcqMatrixRequestId] = useState<string | null>(null)
 
   const timerMinutes = goal.negotiation_json?.timer_required_in_minutes || 0
 
   // Generate MCQs for academics
   useEffect(() => {
-    if (phase === 'loading_quiz' && goal.topic_list) {
-      generateQuizAction(goal.id, goal.topic_list).then((data) => {
-        setMcqData(data)
-        setPhase('quiz')
-        if (timerMinutes > 0) {
-          setTimeLeft(timerMinutes * 60)
+    if (phase === 'loading_quiz' && goal.topic_list && !mcqMatrixRequestId) {
+      generateQuizAction(goal.id, goal.topic_list).then((res) => {
+        if (res.success && res.matrixRequestId) {
+          setMcqMatrixRequestId(res.matrixRequestId)
+        } else {
+          throw new Error("Failed to queue quiz generation")
         }
-      }).catch(() => {
-        setError("Failed to generate quiz. Please try again.")
+      }).catch((e) => {
+        setError(e.message || "Failed to generate quiz. Please try again.")
         setPhase('upload')
       })
     }
-  }, [phase, goal.id, goal.topic_list, timerMinutes])
+  }, [phase, goal.id, goal.topic_list, mcqMatrixRequestId])
+
+  // Polling effect for MCQ Matrix Generation
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (mcqMatrixRequestId && phase === 'loading_quiz') {
+      interval = setInterval(async () => {
+        try {
+          const res = await pollMatrixRequestAction(mcqMatrixRequestId);
+          if (res.success && res.isComplete) {
+            setMcqMatrixRequestId(null);
+            clearInterval(interval);
+            
+            if (res.data) {
+              setMcqData(res.data)
+              setPhase('quiz')
+              if (timerMinutes > 0) {
+                setTimeLeft(timerMinutes * 60)
+              }
+            } else {
+              setError("Invalid quiz data generated.");
+              setPhase('upload');
+            }
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [mcqMatrixRequestId, phase, timerMinutes]);
 
   // Countdown timer
   useEffect(() => {
