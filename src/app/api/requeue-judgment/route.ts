@@ -13,7 +13,7 @@ export async function GET() {
   // Show ALL goals for this user for debugging
   const { data: allGoals, error: goalsErr } = await supabase
     .from("goals")
-    .select("id, goal_text, status, category, deadline, proof_urls, user_answers, topic_list, mcq_json, pledge_amount, created_at")
+    .select("id, goal_text, status, category, deadline, proof_urls, user_answers, topic_list, mcq_json, pledge_amount, created_at, negotiation_json, proof_description")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(5);
@@ -30,8 +30,7 @@ export async function GET() {
     .order("created_at", { ascending: false })
     .limit(10);
 
-  // For any goal that is in judging/active/in_quiz and has no pending matrix PROOF_JUDGMENT request,
-  // offer to requeue
+  // For any goal that is in judging/active/in_quiz, offer to requeue
   const requeueable = (allGoals || []).filter(g => 
     ["judging", "active", "in_quiz"].includes(g.status)
   );
@@ -52,14 +51,29 @@ export async function GET() {
     // Force update goal to judging and create matrix request
     await supabase.from("goals").update({ status: "judging" }).eq("id", goal.id);
 
+    // Build MCQ score data
+    let mcqAnswerData = null;
+    if (goal.mcq_json?.questions && goal.user_answers) {
+      mcqAnswerData = goal.mcq_json.questions.map((q: any, i: number) => ({
+        question: q.question,
+        correct_answer: q.correct_answer,
+        user_answer: goal.user_answers[i] || "not answered",
+        is_correct: goal.user_answers[i] === q.correct_answer
+      }));
+    }
+
     const userPrompt = JSON.stringify({
       type: "PROOF_JUDGMENT",
       goal_id: goal.id,
+      goal_text: goal.goal_text,
       category: goal.category,
+      negotiated_proof_description: goal.negotiation_json?.negotiated_proof_description || goal.proof_description || "No specific proof was negotiated",
+      verification_requirements: goal.negotiation_json?.verification_requirements || [],
       proofUrls: goal.proof_urls || [],
       topicList: goal.topic_list || undefined,
-      userAnswers: goal.user_answers || undefined,
-      mcqJson: goal.mcq_json || undefined
+      mcq_answers: mcqAnswerData,
+      mcq_correct_count: mcqAnswerData ? mcqAnswerData.filter((a: any) => a.is_correct).length : null,
+      mcq_total: mcqAnswerData ? mcqAnswerData.length : null
     }, null, 2);
 
     const { data: matrixReq, error: matrixErr } = await supabase

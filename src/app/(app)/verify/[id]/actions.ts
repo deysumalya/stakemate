@@ -98,15 +98,30 @@ export async function submitProofAction(formData: FormData) {
 
   if (!goal) throw new Error("Goal not found");
 
+  // Build MCQ score data if applicable
+  let mcqAnswerData = null;
+  if (goal.mcq_json?.questions && userAnswers) {
+    mcqAnswerData = goal.mcq_json.questions.map((q: any, i: number) => ({
+      question: q.question,
+      correct_answer: q.correct_answer,
+      user_answer: userAnswers[i] || "not answered",
+      is_correct: userAnswers[i] === q.correct_answer
+    }));
+  }
+
   // Insert matrix request for proof judgment
   const userPrompt = JSON.stringify({
     type: "PROOF_JUDGMENT",
     goal_id: goalId,
+    goal_text: goal.goal_text,
     category: category,
+    negotiated_proof_description: goal.negotiation_json?.negotiated_proof_description || goal.proof_description || "No specific proof was negotiated",
+    verification_requirements: goal.negotiation_json?.verification_requirements || [],
     proofUrls: proofUrls,
     topicList: goal.topic_list || undefined,
-    userAnswers: userAnswers,
-    mcqJson: goal.mcq_json || undefined
+    mcq_answers: mcqAnswerData,
+    mcq_correct_count: mcqAnswerData ? mcqAnswerData.filter((a: any) => a.is_correct).length : null,
+    mcq_total: mcqAnswerData ? mcqAnswerData.length : null
   }, null, 2);
 
   const { error: matrixErr } = await supabase

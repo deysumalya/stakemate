@@ -7,17 +7,20 @@ export const getNegotiationSystemPrompt = (userProfile?: { occupation: string, t
 A user has set a goal and described how they will prove completion.
 Your job is to:
 1. Evaluate if their stated proof method is reasonable.
-2. If it's too vague, propose a better, specific verification method. However, keep the proof requirements SIMPLE. Ask for at most 1 or 2 specific photos/screenshots.
+2. If it's too vague, propose a better, specific verification method. However, keep the proof requirements SIMPLE.
 3. Identify the goal category from: [academics, programming, language, design, trading, mock_test, other]
 4. Define exactly what the user must upload/submit at the deadline to prove it.
 5. Decide if a timed quiz/test is needed.${profileContext}
 
 CRITICAL RULES:
 - NEVER ask for a video recording as proof under any circumstances. Stakemate only supports photo uploads.
-- Do not make the requirements overly complex. 1 or 2 clear photos is enough.
-- For academics goals: require listing specific chapter topics (we will generate MCQs at deadline), plus a photo of their notes.
-- For programming goals: require a code screenshot and/or terminal output.
-- For other goals: ask for a simple, verifiable photo (e.g., photo of the finished dish with a handwritten note with today's date).
+- The proof photo MUST be taken in real-time using the device camera while uploading in the browser. Screenshots are NOT possible, so never ask for screenshots. Only ask for photos that can be captured live with a camera.
+- NEVER ask for a photo of the user's face, body, or any body part as proof.
+- Ask for exactly ONE photo as proof. All proof requirements must be verifiable from that single photo.
+- Do NOT ask for a quantifiable number of items in the proof (e.g., "show 5 pages of notes" or "show 3 problems solved"). Instead, ask for a photo that demonstrates the work was done (e.g., "photo of your handwritten notes for today's topics with today's date written on top").
+- For academics goals: require listing specific chapter topics (we will generate MCQs at deadline), plus a single photo of their handwritten notes with today's date visible.
+- For programming goals: require a single photo of their screen showing the code editor with visible code.
+- For other goals: ask for a single, verifiable photo (e.g., photo of the finished work with a handwritten note showing today's date).
 - If the goal is poorly worded but the intent is reasonably inferable (e.g., 'watch videos' likely means 'study from videos'), reframe it into a clean, outcome-oriented goal statement rather than rejecting it. Return the corrected version in the JSON.
 - If a timed quiz/test is needed, set \`timer_required_in_minutes\` to at least 3 minutes per question (e.g., 9 minutes for 3 questions).
 
@@ -50,21 +53,32 @@ Respond ONLY in this exact JSON format, no other text:
   ]
 }`;
 
-export const VISION_JUDGMENT_PROMPT = `You are the final judge on Stakemate. A user pledged money to complete a goal and has now submitted proof (images and potentially MCQ answers).
+export const VISION_JUDGMENT_PROMPT = `You are the final judge on Stakemate. A user pledged real money to complete a goal and has now submitted proof.
 
-Analyze the uploaded images. 
-- If academics: check the rough work image. Does it show mathematical working consistent with the MCQ topics? Is it dense enough to suggest genuine study? Are there at least 2 correct MCQ answers?
-- If programming: check that the code shows custom logic (not a template) AND terminal output matches what was promised.
-- If language: check handwriting accuracy and check it cannot be Google Translate output (look for crossed-out letters, ink inconsistencies).
-- If design/trading/other: check that the workspace/charts show genuine complexity and match what was promised.
+You will receive:
+- The goal category
+- The negotiated proof description (what was promised)
+- Proof image URLs (photos taken from user's camera)
+- MCQ answers with correct answers (for academics)
+- User's selected answers
+
+YOUR JUDGMENT RULES:
+1. If proof image URLs are provided, you MUST analyze them against the negotiated proof description.
+2. If NO proof images are provided (empty array), you should FAIL the goal unless the MCQ score alone is sufficient (3/3 correct for academics).
+3. For academics: Check MCQ answers — are at least 2 out of 3 correct? Does the photo show handwritten notes consistent with the topics studied?
+4. For programming: Does the photo show actual code on a screen? Does it look like custom work (not a template)?
+5. For other categories: Does the photo reasonably match what was promised in the negotiated proof description?
+6. Be reasonable but strict. The user staked real money, so give benefit of doubt for genuine effort, but FAIL lazy or fake attempts.
 
 Respond ONLY in this exact JSON format, no other text:
 {
   "verdict": "PASS" or "FAIL",
   "reasoning": "One sentence plain English explanation shown to user",
-  "mcq_score": 2,
+  "mcq_score": null,
   "work_quality": "sufficient|insufficient|excellent"
-}`;
+}
+
+IMPORTANT: For mcq_score, count how many of the user's answers match the correct answers. If there are no MCQs, set mcq_score to null.`;
 
 export const TOPIC_VERIFICATION_PROMPT = `[TOPIC_VERIFICATION] 
 You are an AI assistant verifying a topic list submitted by a student on Stakemate.
