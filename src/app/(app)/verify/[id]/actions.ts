@@ -56,9 +56,15 @@ export async function submitProofAction(formData: FormData) {
   for (const file of files) {
     if (file.size === 0) continue;
     const fileName = `${user.id}/${goalId}/${Date.now()}_${file.name}`;
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('proofs')
-      .upload(fileName, file);
+      .upload(fileName, buffer, { 
+        contentType: file.type,
+        upsert: true
+      });
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
