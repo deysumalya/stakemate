@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
 
   // Verify Admin Authentication strictly
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== "sumalyadey@gmail.com" || sessionCookie?.value !== "verified") {
+  if (!user || user.email !== "sumalyadey1@gmail.com" || sessionCookie?.value !== "verified") {
     redirect("/admin/login")
   }
 

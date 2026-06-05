@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
           </div>
           <CardTitle className="text-2xl font-black tracking-tight text-white">Admin 2FA Gateway</CardTitle>
           <CardDescription className="text-red-200/60">
-            You must be logged in as sumalyadey@gmail.com and provide the Admin Secret Key.
+            You must be logged in as sumalyadey1@gmail.com and provide the Admin Secret Key.
           </CardDescription>
         </CardHeader>
         <CardContent>

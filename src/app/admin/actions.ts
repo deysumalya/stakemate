@@ -16,7 +16,7 @@ export async function verifyAdmin2FA(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
 
     // The user MUST also be authenticated with the correct email
-    if (user && user.email === "sumalyadey@gmail.com") {
+    if (user && user.email === "sumalyadey1@gmail.com") {
       const cookieStore = await cookies();
       cookieStore.set("admin_2fa_session", "verified", {
         httpOnly: true,
@@ -47,7 +47,7 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
 
   // Verify Admin Authentication strictly
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== "sumalyadey@gmail.com" || sessionCookie?.value !== "verified") {
+  if (!user || user.email !== "sumalyadey1@gmail.com" || sessionCookie?.value !== "verified") {
     return { success: false, error: "Admin strictly unauthorized" };
   }
 
