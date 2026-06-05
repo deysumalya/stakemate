@@ -169,9 +169,13 @@ export function GoalHistoryList({ pastGoals }: { pastGoals: any[] }) {
                 </div>
               ) : (
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/[0.08]">
-                  <Button variant="ghost" className="text-xs text-muted-foreground hover:text-white" onClick={() => setIsReporting(true)}>
-                    Report Issue
-                  </Button>
+                  {selectedGoal.effectiveStatus !== "pass" ? (
+                    <Button variant="ghost" className="text-xs text-muted-foreground hover:text-white" onClick={() => setIsReporting(true)}>
+                      Report Issue
+                    </Button>
+                  ) : (
+                    <div></div>
+                  )}
                   <Button variant="secondary" onClick={() => setSelectedGoal(null)}>Close</Button>
                 </div>
               )}

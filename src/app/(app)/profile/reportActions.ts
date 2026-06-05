@@ -10,6 +10,18 @@ export async function submitReport(goalId: string, description: string) {
     return { success: false, error: "Unauthorized" };
   }
 
+  // Check if report already exists
+  const { data: existingReport } = await supabase
+    .from('reports')
+    .select('id')
+    .eq('goal_id', goalId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (existingReport) {
+    return { success: false, error: "You have already submitted a report for this goal." };
+  }
+
   const { error } = await supabase
     .from('reports')
     .insert({
