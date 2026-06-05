@@ -23,7 +23,7 @@ CRITICAL RULES:
 Respond ONLY in this exact JSON format, no other text or markdown block formatting:
 {
   "is_goal_acceptable": true,
-  "corrected_goal": "Study Matrices (determinants, inverse, linear equations) using video resources",
+  "corrected_goal": "Clean, outcome-oriented goal statement (or null if original is fine)",
   "category": "academics",
   "negotiated_proof_description": "Exactly what the user must submit at deadline",
   "verification_requirements": ["requirement 1", "requirement 2"],
