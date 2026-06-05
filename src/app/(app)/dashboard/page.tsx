@@ -167,6 +167,20 @@ export default async function DashboardPage() {
                     </div>
                   )}
 
+                  {activeGoal.status === "in_quiz" && (
+                    <div className="flex flex-col gap-4">
+                      <div className="p-5 rounded-xl bg-destructive/[0.06] border border-destructive/15 text-center">
+                        <p className="font-bold text-xs uppercase tracking-wider text-destructive mb-2">
+                          Quiz Abandoned
+                        </p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          You turned back during the MCQ test, so you cannot attempt to prove your work again. 
+                          Your pledge of ₹{(activeGoal.pledge_amount || 0) / 100} will be deducted after the deadline ({new Date(activeGoal.deadline).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}).
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {activeGoal.status === "active" && new Date(activeGoal.deadline) > new Date() && (
                     <div className="flex flex-col gap-4">
                       <div className="p-5 rounded-xl bg-primary/[0.06] border border-primary/15">

@@ -81,6 +81,19 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
     };
   }, [mcqMatrixRequestId, phase, timerMinutes]);
 
+  // Prevent navigating away during quiz
+  useEffect(() => {
+    if (phase === 'quiz') {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = "Warning: Leaving this page will abandon your quiz and you will lose your deposit. Are you sure?";
+        return e.returnValue;
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }, [phase]);
+
   // Countdown timer
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return
@@ -176,6 +189,11 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
       {/* Phase: MCQ Quiz (Academics) */}
       {phase === 'quiz' && mcqData?.questions && (
         <div className="flex flex-col gap-6 animate-sm-slide-in-bottom">
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive p-4 rounded-xl text-sm font-bold flex items-start gap-3">
+            <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <p>DO NOT REFRESH OR NAVIGATE AWAY. Doing so will abandon the quiz and your pledge will be forfeited!</p>
+          </div>
+
           <h2 className="text-xl font-black flex items-center gap-2">
             <Brain className="w-5 h-5 text-primary" />
             AI Generated Quiz
