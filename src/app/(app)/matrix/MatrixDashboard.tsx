@@ -59,6 +59,10 @@ export function MatrixDashboard({ initialRequests }: { initialRequests: any[] })
           const parsed = JSON.parse(req.user_prompt);
           if (parsed.proofUrls && Array.isArray(parsed.proofUrls)) {
             proofUrls = parsed.proofUrls;
+            // Replace massive base64 strings in the copyable text so it doesn't crash Claude
+            parsed.proofUrls = parsed.proofUrls.map((u: string) => 
+              u.startsWith('data:') ? "<IMAGE RENDERED ABOVE - RIGHT CLICK AND COPY IMAGE, THEN PASTE INTO CLAUDE>" : u
+            );
           }
           displayPrompt = JSON.stringify(parsed, null, 2);
         } catch(e) {}
