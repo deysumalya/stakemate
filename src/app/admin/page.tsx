@@ -26,7 +26,7 @@ export default async function AdminDashboard() {
   const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
   // Fetch pending reports with goal details
-  const { data: pendingReports } = await supabaseAdmin
+  const { data: pendingReports, error: fetchError } = await supabaseAdmin
     .from("reports")
     .select(`
       id,
@@ -77,6 +77,13 @@ export default async function AdminDashboard() {
               <CardTitle className="text-xl">Pending Reports ({pendingReports?.length || 0})</CardTitle>
             </CardHeader>
             <CardContent>
+              {fetchError && (
+                <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-md mb-6">
+                  <p className="text-red-400 font-bold mb-2">Database Error</p>
+                  <p className="text-sm font-mono text-red-300">{fetchError.message}</p>
+                  <p className="text-xs text-red-300/70 mt-2">Hint: You may need to add SUPABASE_SERVICE_ROLE_KEY to your Vercel environment variables, or apply the reports table migration.</p>
+                </div>
+              )}
               {pendingReports && pendingReports.length > 0 ? (
                 <AdminReportList reports={pendingReports} />
               ) : (
