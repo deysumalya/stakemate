@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from "@/utils/supabase/server";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -12,7 +13,7 @@ export async function verifyAdmin2FA(formData: FormData) {
   const expectedKey = process.env.ADMIN_SECRET_KEY || "123456";
 
   if (secretKey === expectedKey) {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     // The user MUST also be authenticated with the correct email
@@ -41,32 +42,37 @@ export async function adminLogout() {
 
 // 2. Admin Goal Resolution Actions
 export async function adminResolveGoal(reportId: string, goalId: string, userId: string, verdict: 'pass' | 'fail', pledgeAmount: number) {
-  const supabase = await createClient();
+  const supabaseAuth = await createServerClient();
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get("admin_2fa_session");
 
   // Verify Admin Authentication strictly
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
   if (!user || user.email !== "sumalyadey1@gmail.com" || sessionCookie?.value !== "verified") {
     return { success: false, error: "Admin strictly unauthorized" };
   }
 
+  // Create an admin client bypassing RLS
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
   if (verdict === 'pass') {
     // 1. Mark report as resolved
-    await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    await supabaseAdmin.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_pass
-    await supabase.from('goals').update({ status: 'resolved_pass', effective_status: 'pass' }).eq('id', goalId);
+    await supabaseAdmin.from('goals').update({ status: 'resolved_pass', effective_status: 'pass' }).eq('id', goalId);
     
     // 3. Refund the money to available balance (since it was deducted upon failure)
     // First get current balance
-    const { data: userData } = await supabase.from('users').select('available_balance').eq('id', userId).single();
+    const { data: userData } = await supabaseAdmin.from('users').select('available_balance').eq('id', userId).single();
     if (userData) {
       const newBalance = userData.available_balance + pledgeAmount;
-      await supabase.from('users').update({ available_balance: newBalance }).eq('id', userId);
+      await supabaseAdmin.from('users').update({ available_balance: newBalance }).eq('id', userId);
 
       // Log wallet transaction as refund
-      await supabase.from('wallet_transactions').insert({
+      await supabaseAdmin.from('wallet_transactions').insert({
         user_id: userId,
         type: 'refund',
         amount: pledgeAmount,
@@ -77,11 +83,11 @@ export async function adminResolveGoal(reportId: string, goalId: string, userId:
 
   } else if (verdict === 'fail') {
     // 1. Mark report as resolved
-    await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    await supabaseAdmin.from('reports').update({ status: 'resolved' }).eq('id', reportId);
     
     // 2. Mark goal as resolved_fail
     // If it was already failed/forfeited, we don't need to deduct money again. 
-    await supabase.from('goals').update({ status: 'resolved_fail', effective_status: 'fail' }).eq('id', goalId);
+    await supabaseAdmin.from('goals').update({ status: 'resolved_fail', effective_status: 'fail' }).eq('id', goalId);
   }
 
   return { success: true };

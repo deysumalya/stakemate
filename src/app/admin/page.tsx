@@ -1,4 +1,5 @@
-import { createClient } from "@/utils/supabase/server"
+import { createClient as createServerClient } from "@/utils/supabase/server"
+import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,18 +10,23 @@ import { Button } from "@/components/ui/button"
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const supabaseAuth = await createServerClient()
   const cookieStore = await cookies()
   const sessionCookie = cookieStore.get("admin_2fa_session")
 
   // Verify Admin Authentication strictly
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user } } = await supabaseAuth.auth.getUser()
   if (!user || user.email !== "sumalyadey1@gmail.com" || sessionCookie?.value !== "verified") {
     redirect("/admin/login")
   }
 
+  // Create an admin client bypassing RLS
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
   // Fetch pending reports with goal details
-  const { data: pendingReports } = await supabase
+  const { data: pendingReports } = await supabaseAdmin
     .from("reports")
     .select(`
       id,
