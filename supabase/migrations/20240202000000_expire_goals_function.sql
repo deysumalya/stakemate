@@ -11,7 +11,7 @@ BEGIN
   FOR expired_goal IN
     SELECT g.id, g.user_id, g.pledge_amount
     FROM public.goals g
-    WHERE g.status = 'active'
+    WHERE g.status IN ('active', 'in_quiz')
       AND g.deadline < NOW()
   LOOP
     -- 1. Mark goal as expired
