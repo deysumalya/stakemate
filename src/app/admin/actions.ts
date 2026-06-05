@@ -17,7 +17,8 @@ export async function verifyAdmin2FA(formData: FormData) {
 
     // The user MUST also be authenticated with the correct email
     if (user && user.email === "sumalyadey@gmail.com") {
-      cookies().set("admin_2fa_session", "verified", {
+      const cookieStore = await cookies();
+      cookieStore.set("admin_2fa_session", "verified", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         maxAge: 60 * 60 * 2, // 2 hours
@@ -33,14 +34,16 @@ export async function verifyAdmin2FA(formData: FormData) {
 }
 
 export async function adminLogout() {
-  cookies().delete("admin_2fa_session");
+  const cookieStore = await cookies();
+  cookieStore.delete("admin_2fa_session");
   redirect("/admin/login");
 }
 
 // 2. Admin Goal Resolution Actions
 export async function adminResolveGoal(reportId: string, goalId: string, userId: string, verdict: 'pass' | 'fail', pledgeAmount: number) {
   const supabase = await createClient();
-  const sessionCookie = cookies().get("admin_2fa_session");
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get("admin_2fa_session");
 
   // Verify Admin Authentication strictly
   const { data: { user } } = await supabase.auth.getUser();

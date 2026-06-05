@@ -10,7 +10,8 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
-  const sessionCookie = cookies().get("admin_2fa_session")
+  const cookieStore = await cookies()
+  const sessionCookie = cookieStore.get("admin_2fa_session")
 
   // Verify Admin Authentication strictly
   const { data: { user } } = await supabase.auth.getUser()
