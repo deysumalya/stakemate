@@ -1,8 +1,6 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
-import { generateMCQs, judgeProofWithVision } from "@/utils/ai/claude";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { MCQ_GENERATION_PROMPT, VISION_JUDGMENT_PROMPT } from "@/utils/ai/prompts";
@@ -49,39 +47,48 @@ export async function submitProofAction(formData: FormData) {
   const userAnswersRaw = formData.get('userAnswers') as string;
   const userAnswers = userAnswersRaw ? JSON.parse(userAnswersRaw) : null;
 
-  // Upload proof images
+  // Upload proof images — each upload is individually wrapped so one failure doesn't block everything
   const proofUrls: string[] = [];
   const files = formData.getAll('proofFiles') as File[];
 
   for (const file of files) {
     if (file.size === 0) continue;
-    const fileName = `${user.id}/${goalId}/${Date.now()}_${file.name}`;
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    try {
+      const fileName = `${user.id}/${goalId}/${Date.now()}_${file.name}`;
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('proofs')
-      .upload(fileName, buffer, { 
-        contentType: file.type,
-        upsert: true
-      });
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('proofs')
+        .upload(fileName, buffer, { 
+          contentType: file.type,
+          upsert: true
+        });
 
-    if (uploadError) {
-      console.error("Upload error:", uploadError);
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from('proofs').getPublicUrl(fileName);
+      proofUrls.push(urlData.publicUrl);
+    } catch (uploadErr) {
+      console.error("File upload exception:", uploadErr);
       continue;
     }
-
-    const { data: urlData } = supabase.storage.from('proofs').getPublicUrl(fileName);
-    proofUrls.push(urlData.publicUrl);
   }
 
   // Update goal with proof URLs and user answers
-  await supabase.from('goals').update({
+  const { error: updateErr } = await supabase.from('goals').update({
     proof_urls: proofUrls,
     user_answers: userAnswers,
     status: 'judging',
     submitted_at: new Date().toISOString()
   }).eq('id', goalId).eq('user_id', user.id);
+
+  if (updateErr) {
+    console.error("Goal update error:", updateErr);
+  }
 
   // Fetch the full goal for context
   const { data: goal } = await supabase.from('goals')
@@ -91,7 +98,7 @@ export async function submitProofAction(formData: FormData) {
 
   if (!goal) throw new Error("Goal not found");
 
-  // Call Claude Vision to judge - MOVED TO MATRIX
+  // Insert matrix request for proof judgment
   const userPrompt = JSON.stringify({
     type: "PROOF_JUDGMENT",
     goal_id: goalId,
@@ -118,5 +125,8 @@ export async function submitProofAction(formData: FormData) {
 
   revalidatePath('/dashboard');
   revalidatePath('/profile');
-  redirect('/dashboard');
+  
+  // Return success instead of redirect() — redirect() throws internally
+  // and gets swallowed by the client-side try/catch, causing infinite hang
+  return { success: true };
 }

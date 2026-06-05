@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, Upload, Clock, Brain, CheckCircle, XCircle } from "lucide-react"
@@ -19,6 +20,7 @@ interface GoalData {
 }
 
 export function VerifyForm({ goal }: { goal: GoalData }) {
+  const router = useRouter()
   const [phase, setPhase] = useState<'loading_quiz' | 'quiz' | 'upload' | 'submitting' | 'done'>(
     goal.category === 'academics' ? (goal.mcq_json ? 'quiz' : 'loading_quiz') : 'upload'
   )
@@ -137,7 +139,13 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
     files.forEach(file => formData.append('proofFiles', file))
 
     try {
-      await submitProofAction(formData)
+      const result = await submitProofAction(formData)
+      if (result?.success) {
+        router.push('/dashboard')
+      } else {
+        setError("Submission failed. Please try again.")
+        setPhase('upload')
+      }
     } catch (e: any) {
       setError(e.message || "Submission failed")
       setPhase('upload')
