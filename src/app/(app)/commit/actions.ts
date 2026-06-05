@@ -97,6 +97,18 @@ export async function acceptAndLockGoal(
   if (userError || !userData) {
     throw new Error("Could not fetch user data");
   }
+
+  // 1.5 Check if user already has an active goal
+  const { data: activeGoals } = await supabase
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .in("status", ["negotiating", "active", "in_quiz", "judging"])
+    .limit(1);
+
+  if (activeGoals && activeGoals.length > 0) {
+    return { success: false, error: "You already have an active commitment. Please complete it before starting a new one." };
+  }
   
   // Note: For V1 MVP, if they don't have balance, we can either throw error or auto-allow if they are testing. 
   // Let's enforce balance strictly once Razorpay is connected, but for right now, let's allow negative balance for easy testing.

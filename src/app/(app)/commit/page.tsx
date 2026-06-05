@@ -20,6 +20,18 @@ export default async function CommitPage() {
     redirect("/onboarding");
   }
 
+  // Check if user already has an active goal
+  const { data: activeGoals } = await supabase
+    .from("goals")
+    .select("id")
+    .eq("user_id", user.id)
+    .in("status", ["negotiating", "active", "in_quiz", "judging"])
+    .limit(1);
+
+  if (activeGoals && activeGoals.length > 0) {
+    redirect("/dashboard?message=You%20already%20have%20an%20active%20commitment.%20Complete%20it%20first!");
+  }
+
   const availableBalance = userData?.available_balance || 0;
 
   return (
