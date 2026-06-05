@@ -15,7 +15,6 @@ export default async function DashboardPage() {
     .from("goals")
     .select("*")
     .eq("user_id", user?.id)
-    .in("status", ["negotiating", "active", "in_quiz", "judging"])
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -37,6 +36,10 @@ export default async function DashboardPage() {
   const streak = userData?.streak || 0;
 
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Champion";
+
+  // Check if the latest goal is active
+  const isGoalActive = activeGoal && ["negotiating", "active", "in_quiz", "judging"].includes(activeGoal.status);
+  const isGoalResolved = activeGoal && ["resolved_pass", "resolved_fail"].includes(activeGoal.status);
 
   return (
     <div className="flex flex-col gap-8">
@@ -132,7 +135,7 @@ export default async function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {activeGoal ? (
+              {isGoalActive ? (
                 <div className="flex flex-col gap-6">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Your Goal</p>
@@ -227,6 +230,40 @@ export default async function DashboardPage() {
                       </Button>
                     </div>
                   )}
+                </div>
+              ) : isGoalResolved ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center gap-6 h-full rounded-xl">
+                  {/* Verdict Result State */}
+                  {activeGoal.status === "resolved_pass" ? (
+                    <>
+                      <div className="relative">
+                        <span className="text-6xl animate-sm-float inline-block">✅</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xl font-bold text-primary">Goal Verified!</p>
+                        <p className="text-muted-foreground max-w-sm leading-relaxed">
+                          {activeGoal.verdict_json?.reasoning || "Your proof was accepted. Your deposit has been returned."}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <span className="text-6xl animate-sm-float inline-block">❌</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xl font-bold text-destructive">Verification Failed</p>
+                        <p className="text-muted-foreground max-w-sm leading-relaxed">
+                          {activeGoal.verdict_json?.reasoning || "Your proof was rejected. Your deposit was forfeited."}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                  <Button asChild size="lg" className="font-black text-lg px-10 animate-sm-shimmer relative overflow-hidden mt-4">
+                    <Link href="/commit">
+                      Start a New Commitment
+                    </Link>
+                  </Button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center gap-8 h-full rounded-xl border border-dashed border-white/10">
