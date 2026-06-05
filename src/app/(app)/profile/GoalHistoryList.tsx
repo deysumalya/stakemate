@@ -4,9 +4,32 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { submitReport } from "./reportActions"
 
 export function GoalHistoryList({ pastGoals }: { pastGoals: any[] }) {
   const [selectedGoal, setSelectedGoal] = useState<any>(null)
+  const [isReporting, setIsReporting] = useState(false)
+  const [reportDescription, setReportDescription] = useState("")
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false)
+  const [reportSuccess, setReportSuccess] = useState(false)
+
+  const handleReport = async () => {
+    if (!reportDescription.trim()) return;
+    setIsSubmittingReport(true);
+    const result = await submitReport(selectedGoal.id, reportDescription);
+    if (result.success) {
+      setReportSuccess(true);
+      setTimeout(() => {
+        setIsReporting(false);
+        setReportSuccess(false);
+        setReportDescription("");
+      }, 2000);
+    } else {
+      alert(result.error);
+    }
+    setIsSubmittingReport(false);
+  }
 
   if (!pastGoals || pastGoals.length === 0) {
     return <p className="text-muted-foreground text-sm">No past goals yet.</p>
@@ -63,7 +86,14 @@ export function GoalHistoryList({ pastGoals }: { pastGoals: any[] }) {
         })}
       </div>
 
-      <Dialog open={!!selectedGoal} onOpenChange={(open) => !open && setSelectedGoal(null)}>
+      <Dialog open={!!selectedGoal} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedGoal(null);
+          setIsReporting(false);
+          setReportSuccess(false);
+          setReportDescription("");
+        }
+      }}>
         <DialogContent className="sm:max-w-md bg-card/95 backdrop-blur-xl border-white/[0.08]">
           {selectedGoal && (
             <>
@@ -112,16 +142,39 @@ export function GoalHistoryList({ pastGoals }: { pastGoals: any[] }) {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/[0.08]">
-                <a 
-                  href={`mailto:support@stakemate.com?subject=Issue with Goal ID: ${selectedGoal.id}&body=Hi Stakemate Support,%0D%0A%0D%0AI have an issue with my past goal.%0D%0AGoal ID: ${selectedGoal.id}%0D%0A%0D%0A[Please describe your issue here]`}
-                >
-                  <Button variant="ghost" className="text-xs text-muted-foreground hover:text-white">
+              {isReporting ? (
+                <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-3">
+                  <h4 className="text-sm font-bold">Report an Issue</h4>
+                  <Textarea 
+                    placeholder="Describe why this goal was wrongly graded..."
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                    className="bg-background/50 border-white/[0.1] text-sm"
+                    rows={3}
+                  />
+                  {reportSuccess ? (
+                    <div className="text-sm text-primary font-medium p-2 bg-primary/10 rounded-md text-center">
+                      Report submitted successfully!
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setIsReporting(false)} disabled={isSubmittingReport}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleReport} disabled={isSubmittingReport || !reportDescription.trim()}>
+                        {isSubmittingReport ? "Submitting..." : "Submit Report"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex justify-between items-center mt-4 pt-4 border-t border-white/[0.08]">
+                  <Button variant="ghost" className="text-xs text-muted-foreground hover:text-white" onClick={() => setIsReporting(true)}>
                     Report Issue
                   </Button>
-                </a>
-                <Button variant="secondary" onClick={() => setSelectedGoal(null)}>Close</Button>
-              </div>
+                  <Button variant="secondary" onClick={() => setSelectedGoal(null)}>Close</Button>
+                </div>
+              )}
             </>
           )}
         </DialogContent>
