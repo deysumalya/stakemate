@@ -304,7 +304,7 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
             size="lg"
             className="font-black text-lg rounded-xl h-14 animate-sm-glow-ring"
             onClick={handleSubmit}
-            disabled={Object.keys(userAnswers).length < (mcqData.questions?.length || 3)}
+            disabled={Object.keys(userAnswers).length < (mcqData.questions?.length || 3) || files.length === 0}
           >
             Submit Answers & Proof
           </Button>

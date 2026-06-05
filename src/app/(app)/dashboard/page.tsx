@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Target, Wallet, Flame } from "lucide-react";
 import { LoadMoneyForm } from "./LoadMoneyForm";
+import { DashboardRealtime } from "./DashboardRealtime";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {activeGoal && <DashboardRealtime goalId={activeGoal.id} />}
       {/* Welcome Header */}
       <div className="animate-sm-fade-in-up">
         <p className="text-sm font-medium text-muted-foreground tracking-wider uppercase mb-1">Welcome back</p>

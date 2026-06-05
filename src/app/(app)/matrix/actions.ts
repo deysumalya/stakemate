@@ -14,11 +14,11 @@ export async function fulfillMatrixRequestAction(requestId: string, responseJson
     // Fetch the original request to check if it's a PROOF_JUDGMENT
     const { data: matrixReq } = await supabase
       .from('matrix_requests')
-      .select('user_prompt, user_id')
+      .select('user_prompt, user_id, status')
       .eq('id', requestId)
       .single();
 
-    if (matrixReq) {
+    if (matrixReq && matrixReq.status === 'pending') {
       let isProofJudgment = false;
       let isMcqGeneration = false;
       let goalId = null;
@@ -52,11 +52,11 @@ export async function fulfillMatrixRequestAction(requestId: string, responseJson
           .single();
 
         const { data: goal } = await supabase.from('goals')
-          .select('pledge_amount, goal_text')
+          .select('pledge_amount, goal_text, status')
           .eq('id', goalId)
           .single();
 
-        if (userData && goal) {
+        if (userData && goal && goal.status === 'judging') {
           const pledgeAmount = goal.pledge_amount || 0;
 
           if (isPassed) {
