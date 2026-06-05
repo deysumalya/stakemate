@@ -135,13 +135,36 @@ export function VerifyForm({ goal }: { goal: GoalData }) {
     setError('')
     
     try {
-      // Convert files to base64 data URLs on the client side
+      // Convert files to base64 data URLs on the client side, resizing them to max 1200px to save massive amounts of bandwidth
       const base64Urls: string[] = []
       for (const file of files) {
         if (file.size === 0) continue
         const base64 = await new Promise<string>((resolve, reject) => {
+          const img = new Image()
           const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
+          reader.onload = (e) => {
+            img.onload = () => {
+              const canvas = document.createElement('canvas')
+              let width = img.width
+              let height = img.height
+              const max_size = 1200
+              if (width > height && width > max_size) {
+                height *= max_size / width
+                width = max_size
+              } else if (height > max_size) {
+                width *= max_size / height
+                height = max_size
+              }
+              canvas.width = width
+              canvas.height = height
+              const ctx = canvas.getContext('2d')
+              ctx?.drawImage(img, 0, 0, width, height)
+              // Compress to JPEG with 80% quality
+              resolve(canvas.toDataURL('image/jpeg', 0.8))
+            }
+            img.onerror = reject
+            img.src = e.target?.result as string
+          }
           reader.onerror = reject
           reader.readAsDataURL(file)
         })
