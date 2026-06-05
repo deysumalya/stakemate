@@ -131,7 +131,7 @@ export default async function DashboardPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-primary" />
-                Current Commitment
+                {isGoalResolved ? "Previous Commitment Result" : "Current Commitment"}
               </CardTitle>
             </CardHeader>
             <CardContent>
